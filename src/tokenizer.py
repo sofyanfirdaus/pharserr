@@ -32,6 +32,7 @@ class TokenKind(Enum):
     DECR = auto()
     AND = auto()
     OR = auto()
+    LINE_COMMENT = auto()
 
 
 @dataclass
@@ -151,6 +152,9 @@ class Tokenizer(Iterator):
             raise StopIteration()
 
         location = self.location()
+
+        if self.line.startswith(self.token_pairs[TokenKind.LINE_COMMENT]):
+            self.__next_line()
 
         for token_kind, token_text in self.token_pairs.items():
             if self.line.startswith(s := token_text):

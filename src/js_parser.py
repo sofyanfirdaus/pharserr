@@ -24,7 +24,8 @@ TOKENS = {
     TokenKind.MUL: "*",
     TokenKind.DIV: "/",
     TokenKind.AND: "&&",
-    TokenKind.OR: "||"
+    TokenKind.OR: "||",
+    TokenKind.LINE_COMMENT: '//',
 }
 
 
