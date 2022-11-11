@@ -25,6 +25,7 @@ class WordCFG:
                                     k][col] and transform[1] in table[
                                         pos - k - 1][col + k + 1]:
                                 table[pos][col].add(symbol)
+        pprint(table)
         return "S" in table[n - 1][0]
 
 
@@ -65,4 +66,4 @@ cfg = WordCFGBuilder()\
         .build()
 
 pprint(cfg.rules)
-pprint(cfg.evaluate("I saw the cat".split()))
+pprint(cfg.evaluate("I saw the cat with the telescope".split()))
