@@ -31,6 +31,7 @@ class TokenKind(Enum):
     INCR = auto()
     DECR = auto()
     AND = auto()
+    OR = auto()
 
 
 @dataclass

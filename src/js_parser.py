@@ -1,4 +1,5 @@
 from tokenizer import TokenKind, Tokenizer, Token
+from pprint import pprint as print
 
 TOKENS = {
     TokenKind.OPEN_PAREN: "(",
@@ -22,7 +23,8 @@ TOKENS = {
     TokenKind.MINUS: "-",
     TokenKind.MUL: "*",
     TokenKind.DIV: "/",
-    TokenKind.AND: "&&"
+    TokenKind.AND: "&&",
+    TokenKind.OR: "||"
 }
 
 
@@ -48,15 +50,45 @@ class JSParser:
         return self.__expression__()
 
     def __expression__(self):
-        return self.__binary_expr__()
+        return self.__logic_expr__()
+
+    def __logic_expr__(self):
+        return self.__or_expr__()
+
+    def __or_expr__(self):
+        node = self.__and_expr__()
+        while self.lookahead.kind == TokenKind.OR:
+            node = {
+                "type": "LogicalExpression",
+                "left": node,
+                "operator": "||"
+            }
+            self.__consume_token__(TokenKind.OR)
+            node["right"] = self.__and_expr__()
+        return node
+
+    def __and_expr__(self):
+        node = self.__binary_expr__()
+        while self.lookahead.kind == TokenKind.AND:
+            node = {
+                "type": "LogicalExpression",
+                "left": node,
+                "operator": "&&"
+            }
+            self.__consume_token__(TokenKind.AND)
+            node["right"] = self.__binary_expr__()
+        return node
 
     def __binary_expr__(self):
         return self.__add_expr__()
 
     def __add_expr__(self):
-        node = {"type": "BinaryExpression"}
-        node["left"] = self.__mul_expr__()
+        node = self.__mul_expr__()
         while self.lookahead.kind == TokenKind.PLUS or self.lookahead.kind == TokenKind.MINUS:
+            node = {
+                "type": "BinaryExpression",
+                "left": node
+            }
             match self.lookahead.kind:
                 case TokenKind.PLUS:
                     self.__consume_token__(TokenKind.PLUS)
@@ -68,9 +100,12 @@ class JSParser:
         return node
 
     def __mul_expr__(self):
-        node = {"type": "BinaryExpression"}
-        node["left"] = self.__prim_expr__()
+        node = self.__prim_expr__()
         while self.lookahead.kind == TokenKind.MUL or self.lookahead.kind == TokenKind.DIV:
+            node = {
+                "type": "BinaryExpression",
+                "left": node
+            }
             match self.lookahead.kind:
                 case TokenKind.MUL:
                     node["operator"] = "*"
@@ -91,7 +126,6 @@ class JSParser:
             node = self.__literal__()
         return node
 
-
     def __literal__(self):
         if self.lookahead is not None:
             match self.lookahead.kind:
@@ -110,9 +144,12 @@ class JSParser:
 
     def __consume_token__(self, kind: TokenKind) -> Token:
         token = self.tokenizer.expect_token(kind)
-        if not self.tokenizer.stop:
+        try:
             self.lookahead = self.tokenizer.peek()
+        except StopIteration:
+            ...
         return token
+
 
 parser = JSParser()
 

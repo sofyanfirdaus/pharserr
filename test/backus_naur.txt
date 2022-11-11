@@ -20,9 +20,17 @@ Expression
     ;
 
 LogicalExpression
+    : OrExpression
+    ;
+
+OrExpression
+    : AndExpression
+    | OrExpression || AndExpression
+    ;
+
+AndExpression
     : BinaryExpression
-    | LogicalExpression && BinaryExpression
-    | LogicalExpression || BinaryExpression
+    | AndExpression && BinaryExpression
     ;
 
 BinaryExpression
