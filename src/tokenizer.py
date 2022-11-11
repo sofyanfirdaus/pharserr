@@ -63,6 +63,7 @@ class Tokenizer(Iterator):
         self.full_line = ""
         self.row = 0
         self.token_pairs = token_pairs
+        self.stop = False
 
         self.peek_token: Token | None = None
 
@@ -145,6 +146,7 @@ class Tokenizer(Iterator):
             self.__next_line()
 
         if len(self.line) == 0:
+            self.stop = True
             raise StopIteration()
 
         location = self.location()

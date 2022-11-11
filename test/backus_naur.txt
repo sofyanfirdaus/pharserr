@@ -1,0 +1,50 @@
+Program
+    : StatementList
+    ;
+
+StatementList
+    : Statement
+    : StatementList Statement
+    ;
+
+Statement
+    : ExpressionStatement
+    ;
+
+ExpressionStatement
+    : Expression
+    ;
+
+Expression
+    : LogicalExpression
+    ;
+
+LogicalExpression
+    : BinaryExpression
+    | LogicalExpression && BinaryExpression
+    | LogicalExpression || BinaryExpression
+    ;
+
+BinaryExpression
+    : AdditiveExpression
+    ;
+
+AdditiveExpression
+    : MultiplicativeExpression
+    : AdditiveExpression + MultiplicativeExpression
+    ;
+
+MultiplicativeExpression
+    : PrimaryExpression
+    : MultiplicativeExpression * PrimaryExpression
+    ;
+
+PrimaryExpression
+    : Literal
+    : ParenthesizedExpression
+    : CallExpression
+    ;
+
+ParenthesizedExpression
+    : ( Expression )
+    ;
