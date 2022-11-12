@@ -36,8 +36,20 @@ OrExpression
     ;
 
 AndExpression
+    : ComparativeExpression
+    | AndExpression && ComparativeExpression
+    ;
+
+ComparativeExpression
     : BinaryExpression
-    | AndExpression && BinaryExpression
+    | ComparativeExpression > BinaryExpression
+    | ComparativeExpression >= BinaryExpression
+    | ComparativeExpression < BinaryExpression
+    | ComparativeExpression <= BinaryExpression
+    | ComparativeExpression == BinaryExpression
+    | ComparativeExpression != BinaryExpression
+    | ComparativeExpression === BinaryExpression
+    | ComparativeExpression !== BinaryExpression
     ;
 
 BinaryExpression
@@ -47,11 +59,13 @@ BinaryExpression
 AdditiveExpression
     : MultiplicativeExpression
     | AdditiveExpression + MultiplicativeExpression
+    | AdditiveExpression - MultiplicativeExpression
     ;
 
 MultiplicativeExpression
     : PrimaryExpression
     | MultiplicativeExpression * PrimaryExpression
+    | MultiplicativeExpression / PrimaryExpression
     ;
 
 PrimaryExpression

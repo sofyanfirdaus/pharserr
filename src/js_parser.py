@@ -10,8 +10,11 @@ TOKENS = {
     TokenKind.CLOSE_SQUARE: "]",
     TokenKind.SEMICOLON: ";",
     TokenKind.COMMA: ",",
+    TokenKind.LINE_COMMENT: '//',
     TokenKind.EQUIV: "===",
+    TokenKind.NEQUIV: "!==",
     TokenKind.EQ: "==",
+    TokenKind.NEQ: "!=",
     TokenKind.ASSIGNMENT: "=",
     TokenKind.GE: ">=",
     TokenKind.LE: "<=",
@@ -25,7 +28,6 @@ TOKENS = {
     TokenKind.DIV: "/",
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
-    TokenKind.LINE_COMMENT: '//',
 }
 
 KEYWORDS = [
@@ -90,23 +92,38 @@ class JSParser:
         while self.lookahead.kind == TokenKind.OR:
             node = {
                 "type": "LogicalExpression",
+                "operator": self.__consume_token__(TokenKind.OR).text,
                 "left": node,
-                "operator": "||"
+                "right": self.__and_expr__()
             }
-            self.__consume_token__(TokenKind.OR)
-            node["right"] = self.__and_expr__()
         return node
 
     def __and_expr__(self):
-        node = self.__binary_expr__()
+        node = self.__comp_expr__()
         while self.lookahead.kind == TokenKind.AND:
             node = {
                 "type": "LogicalExpression",
+                "operator": self.__consume_token__(TokenKind.AND).text,
                 "left": node,
-                "operator": "&&"
+                "right": self.__comp_expr__()
             }
-            self.__consume_token__(TokenKind.AND)
-            node["right"] = self.__binary_expr__()
+        return node
+
+    def __comp_expr__(self):
+        node = self.__binary_expr__()
+        comp_ops = [
+            TokenKind.EQUIV, TokenKind.NEQUIV,
+            TokenKind.EQ, TokenKind.NEQ,
+            TokenKind.GE, TokenKind.LE,
+            TokenKind.GT, TokenKind.LT
+        ]
+        while self.lookahead.kind in comp_ops:
+            node = {
+                "type": "BinaryExpression",
+                "operator": self.__consume_token__(self.lookahead.kind).text,
+                "left": node,
+                "right": self.__binary_expr__()
+            }
         return node
 
     def __binary_expr__(self):
@@ -114,36 +131,26 @@ class JSParser:
 
     def __add_expr__(self):
         node = self.__mul_expr__()
-        while self.lookahead.kind == TokenKind.PLUS or self.lookahead.kind == TokenKind.MINUS:
+        add_ops = [TokenKind.PLUS, TokenKind.MINUS]
+        while self.lookahead.kind in add_ops:
             node = {
                 "type": "BinaryExpression",
-                "left": node
+                "operator": self.__consume_token__(self.lookahead.kind).text,
+                "left": node,
+                "right": self.__mul_expr__()
             }
-            match self.lookahead.kind:
-                case TokenKind.PLUS:
-                    self.__consume_token__(TokenKind.PLUS)
-                    node["operator"] = "+"
-                case TokenKind.MINUS:
-                    node["operator"] = "-"
-                    self.__consume_token__(TokenKind.MINUS)
-            node["right"] = self.__mul_expr__()
         return node
 
     def __mul_expr__(self):
         node = self.__prim_expr__()
-        while self.lookahead.kind == TokenKind.MUL or self.lookahead.kind == TokenKind.DIV:
+        mul_ops = [TokenKind.MUL, TokenKind.DIV]
+        while self.lookahead.kind in mul_ops:
             node = {
                 "type": "BinaryExpression",
-                "left": node
+                "operator": self.__consume_token__(self.lookahead.kind).text,
+                "left": node,
+                "right": self.__prim_expr__()
             }
-            match self.lookahead.kind:
-                case TokenKind.MUL:
-                    node["operator"] = "*"
-                    self.__consume_token__(TokenKind.MUL)
-                case TokenKind.DIV:
-                    node["operator"] = "/"
-                    self.__consume_token__(TokenKind.DIV)
-            node["right"] = self.__prim_expr__()
         return node
 
     def __prim_expr__(self):
