@@ -1,3 +1,4 @@
+from typing import Any
 from tokenizer import TokenKind, Tokenizer, Token
 from pprint import pprint as print
 
@@ -40,13 +41,23 @@ KEYWORDS = [
 
 class JSParser:
 
+    def parse_string(self, string: str) -> dict:
+        self.tokenizer = Tokenizer.from_string(string, TOKENS)
+        self.lookahead = self.tokenizer.peek()
+        return self.__program__()
+
     def parse_file(self, file_path: str) -> dict:
         self.tokenizer = Tokenizer.from_file(file_path, TOKENS)
         self.lookahead = self.tokenizer.peek()
         return self.__program__()
 
     def __program__(self):
-        return {"type": "Program", "body": self.__statement_list__()}
+        node: dict[Any, Any] = {"type": "Program"}
+        if self.lookahead is not None:
+            node["body"] = self.__statement_list__()
+        else:
+            node["body"] = []
+        return node
 
     def __statement_list__(self, until: TokenKind | None = None):
         statements = [self.__statement__()]
@@ -194,18 +205,21 @@ class JSParser:
     def __consume_token__(self, kind: TokenKind) -> Token:
         token = self.tokenizer.expect_token(kind)
         try:
-            self.lookahead = self.tokenizer.peek()
+            next_token = self.tokenizer.peek()
         except StopIteration:
-            ...
+            next_token = None
+        next_token = self.tokenizer.peek()
+        if next_token is not None:
+            self.lookahead = next_token
         return token
 
     def isKeyword(self, token: Token):
         return token.text in KEYWORDS
 
 
-parser = JSParser()
-
-print(parser.parse_file("test/simple.js"))
+# parser = JSParser()
+#
+# print(parser.parse_file("test/simple.js"))
 
 # for token in (tokenizer := Tokenizer.from_file("test/inputAcc.js", TOKENS)):
 #     if token.kind == TokenKind.WORD and token.text == "if":

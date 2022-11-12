@@ -125,7 +125,10 @@ class Tokenizer(Iterator):
     def __next__(self) -> Token:
         token = self.peek()
         self.peek_token = None
-        return token
+        if token is not None:
+            return token
+        else:
+            raise StopIteration()
 
     def print_err(self, err_msg: str, token: Token | None = None):
         if token is not None:
@@ -140,7 +143,7 @@ class Tokenizer(Iterator):
         print("    | {0:>{1}}".format("^" * length, location.col + length - 1))
         sys.exit(1)
 
-    def peek(self) -> Token:
+    def peek(self) -> Token | None:
         if self.peek_token is not None:
             return self.peek_token
 
@@ -151,7 +154,7 @@ class Tokenizer(Iterator):
 
         if len(self.line) == 0:
             self.stop = True
-            raise StopIteration()
+            return None
 
         location = self.location()
 
