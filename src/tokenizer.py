@@ -103,21 +103,21 @@ class Tokenizer(Iterator):
             token = next(self)
             if token.kind != kind:
                 if err_msg:
-                    self.__print_err(
+                    self.print_err(
                         f"Expected {err_msg}, but got `{token.text}`", token)
                 else:
-                    self.__print_err(
+                    self.print_err(
                         f"Expected `{self.token_pairs[kind]}, but got `{token.text}`",
                         token)
             return token
         except StopIteration:
-            self.__print_err(
+            self.print_err(
                 f"Expected `{self.token_pairs[kind]}, but reached end of file")
 
     def expect_keyword(self, name: str):
         token = self.expect_token(TokenKind.WORD, "keyword")
         if token.text != name:
-            self.__print_err(f"Expected keyword `{name}`", token)
+            self.print_err(f"Expected keyword `{name}`", token)
         return token
 
     def __next__(self) -> Token:
@@ -125,7 +125,7 @@ class Tokenizer(Iterator):
         self.peek_token = None
         return token
 
-    def __print_err(self, err_msg: str, token: Token | None = None):
+    def print_err(self, err_msg: str, token: Token | None = None):
         if token is not None:
             length = len(token.text)
             location = token.location
@@ -135,7 +135,7 @@ class Tokenizer(Iterator):
         print(f"{location}: ERROR: {err_msg}", file=sys.stderr)
         print("    |")
         print(f"{location.row:>4}| " + self.full_line)
-        print("    | {0:>{1}}".format("^" * length, location.col))
+        print("    | {0:>{1}}".format("^" * length, location.col + length - 1))
         sys.exit(1)
 
     def peek(self) -> Token:
@@ -192,7 +192,7 @@ class Tokenizer(Iterator):
         elif (quote := self.line[0]) in "'\"`":
             end = self.line[1:].find(quote)
             if end == -1:
-                self.__print_err("Unterminated string literal")
+                self.print_err("Unterminated string literal")
             else:
                 s = self.line[:end + 2]
                 self.line = self.line[end + 2:]
@@ -200,4 +200,4 @@ class Tokenizer(Iterator):
                 self.peek_token = token
                 return token
         else:
-            self.__print_err(f"Unknown token starts with `{self.line[0]}`")
+            self.print_err(f"Unknown token starts with `{self.line[0]}`")

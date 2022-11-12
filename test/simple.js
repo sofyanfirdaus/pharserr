@@ -1,5 +1,5 @@
 // ini komentar
-2 + 10 * 3;
+20 + 10 - x;
 
 {
   // ini block statement

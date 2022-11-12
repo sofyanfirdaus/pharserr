@@ -148,19 +148,31 @@ class JSParser:
 
     def __prim_expr__(self):
         node = {}
-        if self.lookahead.kind == TokenKind.OPEN_PAREN:
-            self.__consume_token__(TokenKind.OPEN_PAREN)
-            node = self.__expression__()
-            self.__consume_token__(TokenKind.CLOSE_PAREN)
-        else:
-            node = self.__literal__()
+        match self.lookahead.kind:
+            case TokenKind.OPEN_PAREN:
+                self.__consume_token__(TokenKind.OPEN_PAREN)
+                node = self.__expression__()
+                self.__consume_token__(TokenKind.CLOSE_PAREN)
+            case TokenKind.WORD:
+                node = self.__identifier__()
+            case _:
+                node = self.__literal__()
         return node
 
+    def __identifier__(self):
+        ident = self.__consume_token__(TokenKind.WORD)
+        if not self.isKeyword(ident):
+            return {
+                "type": "Identifier",
+                "name": ident.text
+            }
+        else:
+            self.tokenizer.print_err("unexpected use of keyword", ident)
+
     def __literal__(self):
-        if self.lookahead is not None:
-            match self.lookahead.kind:
-                case TokenKind.NUMBER_LIT: return self.__numeric_literal__()
-                case TokenKind.STR_LIT: return self.__str_literal__()
+        match self.lookahead.kind:
+            case TokenKind.NUMBER_LIT: return self.__numeric_literal__()
+            case TokenKind.STR_LIT: return self.__str_literal__()
 
     def __numeric_literal__(self):
         token = self.__consume_token__(TokenKind.NUMBER_LIT)
@@ -179,6 +191,9 @@ class JSParser:
         except StopIteration:
             ...
         return token
+
+    def isKeyword(self, token: Token):
+        return token.text in KEYWORDS
 
 
 parser = JSParser()
