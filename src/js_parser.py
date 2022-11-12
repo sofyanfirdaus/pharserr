@@ -62,7 +62,16 @@ class JSParser:
                 return self.__expression_statement__()
 
     def __block_statement__(self):
-        ...
+        self.__consume_token__(TokenKind.OPEN_CURLY)
+        node = {
+            "type": "BlockStatement",
+            "body": self.__statement_list__(TokenKind.CLOSE_CURLY)
+                    if self.lookahead.kind != TokenKind.CLOSE_CURLY
+                    else []
+        }
+        self.__consume_token__(TokenKind.CLOSE_CURLY)
+
+        return node
 
     def __expression_statement__(self):
         node = {"type": "ExpressionStatement", "body": self.__expression__()}
