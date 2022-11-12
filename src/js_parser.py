@@ -28,6 +28,13 @@ TOKENS = {
     TokenKind.LINE_COMMENT: '//',
 }
 
+KEYWORDS = [
+    "break", "const", "case", "catch", "continue", "default",
+    "delete", "else", "false", "finally", "for", "function",
+    "if", "let", "null", "return", "switch", "throw", "try",
+    "true", "var", "while"
+]
+
 
 class JSParser:
 
@@ -37,18 +44,31 @@ class JSParser:
         return self.__program__()
 
     def __program__(self):
-        node = {"type": "Program"}
+        return {"type": "Program", "body": self.__statement_list__()}
+
+    def __statement_list__(self, until: TokenKind | None = None):
         statements = [self.__statement__()]
 
-        while not self.tokenizer.stop:
+        while not self.tokenizer.stop and self.lookahead.kind != until:
             statements.append(self.__statement__())
 
-        node["body"] = statements
-
-        return node
+        return statements
 
     def __statement__(self):
-        return self.__expression__()
+        match self.lookahead.kind:
+            case TokenKind.OPEN_CURLY:
+                return self.__block_statement__()
+            case _:
+                return self.__expression_statement__()
+
+    def __block_statement__(self):
+        ...
+
+    def __expression_statement__(self):
+        node = {"type": "ExpressionStatement", "body": self.__expression__()}
+        if self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token__(TokenKind.SEMICOLON)
+        return node
 
     def __expression__(self):
         return self.__logic_expr__()

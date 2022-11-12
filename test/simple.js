@@ -1,2 +1,2 @@
 // ini komentar
-2
+2 + 10 * 3;

@@ -9,10 +9,17 @@ StatementList
 
 Statement
     : ExpressionStatement
+    | BlockStatement
+    ;
+
+BlockStatement
+    : { }
+    | { StatementList }
     ;
 
 ExpressionStatement
     : Expression
+    | Expression ;
     ;
 
 Expression
