@@ -30,6 +30,10 @@ class TokenKind(Enum):
     MUL = auto()
     DIV = auto()
     ASSIGNMENT = auto()
+    PLUS_ASSIGNMENT = auto()
+    MINUS_ASSIGNMENT = auto()
+    MUL_ASSIGNMENT = auto()
+    DIV_ASSIGNMENT = auto()
     INCR = auto()
     DECR = auto()
     AND = auto()
@@ -149,7 +153,8 @@ class Tokenizer(Iterator):
 
         self.line = self.line.lstrip()
 
-        while len(self.line) == 0 and len(self.content) > 0:
+        while (len(self.line) == 0 and len(self.content) > 0) or \
+            self.line.startswith(self.token_pairs[TokenKind.LINE_COMMENT]):
             self.__next_line()
 
         if len(self.line) == 0:
@@ -157,9 +162,6 @@ class Tokenizer(Iterator):
             return None
 
         location = self.location()
-
-        if self.line.startswith(self.token_pairs[TokenKind.LINE_COMMENT]):
-            self.__next_line()
 
         for token_kind, token_text in self.token_pairs.items():
             if self.line.startswith(s := token_text):
