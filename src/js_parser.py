@@ -22,7 +22,6 @@ TOKENS = {
     TokenKind.MINUS_ASSIGNMENT: "-=",
     TokenKind.MUL_ASSIGNMENT: "*=",
     TokenKind.DIV_ASSIGNMENT: "/=",
-    TokenKind.DIV_ASSIGNMENT: "*=",
     TokenKind.ASSIGNMENT: "=",
     TokenKind.GE: ">=",
     TokenKind.LE: "<=",

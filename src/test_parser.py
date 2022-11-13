@@ -252,6 +252,66 @@ class TestParser(unittest.TestCase):
             dict  # parsing sukses
         )
 
+    def test_assignment_expression(self):
+        self.assertDictEqual(
+            self.parser.parse_string("x = 1"), {
+                "type":
+                "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "body": {
+                        "type": "AssignmentExpression",
+                        "operator": "=",
+                        "left": {
+                            "type": "Identifier",
+                            "name": "x"
+                        },
+                        "right": {
+                            "type": "Literal",
+                            "value": 1,
+                            "raw": "1"
+                        }
+                    }
+                }]
+            })
+        self.assertIsInstance(
+            self.parser.parse_string("x=x+=x-=x*=x/=x"),
+            dict  # parsing sukses
+        )
+
+    def test_precedence_assignment_or(self):
+        # expect or dievaluasi duluan
+        self.assertDictEqual(
+            self.parser.parse_string("x = true || false"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "body": {
+                        "type": "AssignmentExpression",
+                        "operator": "=",
+                        "left": {
+                            "type": "Identifier",
+                            "name": "x"
+                        },
+                        "right": {
+                            "type": "LogicalExpression",
+                            "operator": "||",
+                            "left": {
+                                "type": "Literal",
+                                "value": True,
+                                "raw": "true"
+                            },
+                            "right": {
+                                "type": "Literal",
+                                "value": False,
+                                "raw": "false"
+                            }
+                        }
+                    }
+                }]
+            }
+        )
+
     def test_precedence_or_and(self):
         # expect and dievaluasi duluan
         self.assertDictEqual(
@@ -391,8 +451,8 @@ class TestParser(unittest.TestCase):
     def test_precedence_multiplicative_parenthesized(self):
         # expect ekspresi dalam kurung dievaluasi duluan
         self.assertDictEqual(
-            self.parser.parse_string("(1 && 1) * 2"),
-            {  # TODO: assignment expression yang di dalam kurungya
+            self.parser.parse_string("(x = 1) * 2"),
+            {
                 "type":
                 "Program",
                 "body": [{
@@ -401,12 +461,11 @@ class TestParser(unittest.TestCase):
                         "type": "BinaryExpression",
                         "operator": "*",
                         "left": {
-                            "type": "LogicalExpression",
-                            "operator": "&&",
+                            "type": "AssignmentExpression",
+                            "operator": "=",
                             "left": {
-                                "type": "Literal",
-                                "value": 1,
-                                "raw": "1"
+                                "type": "Identifier",
+                                "name": "x"
                             },
                             "right": {
                                 "type": "Literal",
