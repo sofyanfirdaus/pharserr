@@ -80,8 +80,9 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if (self.is_keyword(self.lookahead,"while")):
-            return self.__while_statement()
+        if self.is_keyword(self.lookahead):
+            match self.lookahead.text:
+                case "while": return self.__while_statement()
 
         match self.lookahead.kind:
             case TokenKind.OPEN_CURLY:
@@ -286,11 +287,8 @@ class JSParser:
             self.lookahead = next_token
         return token
 
-    def is_keyword(self, token: Token, name: str = ""):
-        yes = token.text in KEYWORDS
-        if name:
-            yes = yes and token.text == name
-        return yes
+    def is_keyword(self, token):
+        return token.text in KEYWORDS
 
 
 parser = JSParser()
