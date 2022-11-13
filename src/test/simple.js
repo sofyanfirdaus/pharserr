@@ -28,5 +28,10 @@
 // tes while
 
 // i = 1
+// while (x)
+//     ;
+
+// tes do while
+do 
+    i = 1
 while (x)
-    ;

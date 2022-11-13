@@ -25,7 +25,11 @@ BlockStatement
 
 WhileStatement
     : while (Expression) Statement
-    | while (Expression) { Statement }
+    ;
+
+DoWhileStatement
+    : do Statement while (Expression)
+    | do Statement while (Expression);
 
 PrimaryStatement
     : AssignmentStatement

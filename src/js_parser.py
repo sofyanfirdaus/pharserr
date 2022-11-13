@@ -42,7 +42,7 @@ KEYWORDS = [
     "break", "const", "case", "catch", "continue", "default",
     "delete", "else", "false", "finally", "for", "function",
     "if", "let", "null", "return", "switch", "throw", "try",
-    "true", "var", "while"
+    "true", "var", "while", "do"
 ]
 
 
@@ -83,6 +83,7 @@ class JSParser:
         if self.is_keyword(self.lookahead):
             match self.lookahead.text:
                 case "while": return self.__while_statement()
+                case "do": return self.__dowhile_statement()
 
         match self.lookahead.kind:
             case TokenKind.OPEN_CURLY:
@@ -123,6 +124,22 @@ class JSParser:
             "condition": condition,
             "body": body
         }
+
+    def __dowhile_statement(self):
+        self.__consume_token(TokenKind.WORD)
+        body = self.__statement()
+        self.__consume_keyword("while")
+        self.__consume_token(TokenKind.OPEN_PAREN)
+        condition = self.__expression()
+        self.__consume_token(TokenKind.CLOSE_PAREN)
+        if self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token(TokenKind.SEMICOLON)
+        node = {
+            "type": "DoWhileStatement",
+            "body": body,
+            "condition": condition
+        }
+        return node
 
     def __primary_expression(self):
         node = {"type": "ExpressionStatement", "body": self.__expression()}
@@ -287,6 +304,16 @@ class JSParser:
 
     def __consume_token(self, kind: TokenKind) -> Token:
         token = self.tokenizer.expect_token(kind)
+        try:
+            next_token = self.tokenizer.peek()
+        except StopIteration:
+            next_token = None
+        if next_token is not None:
+            self.lookahead = next_token
+        return token
+
+    def __consume_keyword(self, name: str) -> Token:
+        token = self.tokenizer.expect_keyword(name)
         try:
             next_token = self.tokenizer.peek()
         except StopIteration:
