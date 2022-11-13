@@ -8,13 +8,27 @@ StatementList
     ;
 
 Statement
-    : ExpressionStatement
+    : PrimaryStatement
     | BlockStatement
     ;
 
 BlockStatement
     : { }
     | { StatementList }
+    ;
+
+PrimaryStatement
+    : AssignmentStatement
+    | ExpressionStatement
+    ;
+
+AssignmentStatement
+    : Expression
+    : Expression ;
+    | Identifier = Expression
+    | Identifier = Expression ;
+    | Identifier <operator> = Expression
+    | Identifier <operator> = Expression ;
     ;
 
 ExpressionStatement
