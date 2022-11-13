@@ -16,11 +16,6 @@ TOKENS = {
     TokenKind.NEQUIV: "!==",
     TokenKind.EQ: "==",
     TokenKind.NEQ: "!=",
-    TokenKind.PLUS_ASSIGNMENT: "+=",
-    TokenKind.MINUS_ASSIGNMENT: "-=",
-    TokenKind.MUL_ASSIGNMENT: "*=",
-    TokenKind.DIV_ASSIGNMENT: "/=",
-    TokenKind.DIV_ASSIGNMENT: "*=",
     TokenKind.ASSIGNMENT: "=",
     TokenKind.GE: ">=",
     TokenKind.LE: "<=",
@@ -77,7 +72,7 @@ class JSParser:
             case TokenKind.OPEN_CURLY:
                 return self.__block_statement()
             case _:
-                return self.__primary_expression()
+                return self.__expression_statement()
 
     def __block_statement(self):
         self.__consume_token(TokenKind.OPEN_CURLY)
@@ -91,20 +86,8 @@ class JSParser:
 
         return node
 
-    def __primary_expression(self):
+    def __expression_statement(self):
         node = {"type": "ExpressionStatement", "body": self.__expression()}
-        ops = [
-            TokenKind.ASSIGNMENT, TokenKind.PLUS_ASSIGNMENT,
-            TokenKind.MINUS_ASSIGNMENT, TokenKind.MUL_ASSIGNMENT,
-            TokenKind.DIV_ASSIGNMENT
-        ]
-        if self.lookahead.kind in ops:
-            node = {
-                "type": "AssignmentStatement",
-                "operator": self.__consume_token(self.lookahead.kind).text,
-                "left": node,
-                "right": self.__expression()
-            }
         if self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
         return node
@@ -234,11 +217,9 @@ class JSParser:
         return token.text in KEYWORDS
 
 
-parser = JSParser()
-
-import os
-
-print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/simple.js"))
+# parser = JSParser()
+#
+# print(parser.parse_file("test/simple.js"))
 
 # for token in (tokenizer := Tokenizer.from_file("test/inputAcc.js", TOKENS)):
 #     if token.kind == TokenKind.WORD and token.text == "if":
