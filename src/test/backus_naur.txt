@@ -8,7 +8,7 @@ StatementList
     ;
 
 Statement
-    : PrimaryStatement
+    : ExpressionStatement
     | BlockStatement
     | EmptyStatement
     | WhileStatement
@@ -31,27 +31,19 @@ DoWhileStatement
     : do Statement while (Expression)
     | do Statement while (Expression);
 
-PrimaryStatement
-    : AssignmentStatement
-    | ExpressionStatement
-    ;
-
-AssignmentStatement
-    : Expression
-    : Expression ;
-    | Identifier = Expression
-    | Identifier = Expression ;
-    | Identifier <operator> = Expression
-    | Identifier <operator> = Expression ;
-    ;
-
 ExpressionStatement
     : Expression
     | Expression ;
     ;
 
 Expression
+    : AssignmentExpression
+    ;
+
+AssignmentExpression
     : LogicalExpression
+    | Identifier = Expression
+    | Identifier <operator> = Expression
     ;
 
 LogicalExpression

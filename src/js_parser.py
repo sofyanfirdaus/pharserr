@@ -22,7 +22,6 @@ TOKENS = {
     TokenKind.MINUS_ASSIGNMENT: "-=",
     TokenKind.MUL_ASSIGNMENT: "*=",
     TokenKind.DIV_ASSIGNMENT: "/=",
-    TokenKind.DIV_ASSIGNMENT: "*=",
     TokenKind.ASSIGNMENT: "=",
     TokenKind.GE: ">=",
     TokenKind.LE: "<=",
@@ -91,7 +90,7 @@ class JSParser:
             case TokenKind.SEMICOLON:
                 return self.__empty_statement()
             case _:
-                return self.__primary_expression()
+                return self.__expression_statement()
 
     def __empty_statement(self):
         self.__consume_token(TokenKind.SEMICOLON)
@@ -126,7 +125,7 @@ class JSParser:
         }
 
     def __dowhile_statement(self):
-        self.__consume_token(TokenKind.WORD)
+        self.__consume_keyword("do")
         body = self.__statement()
         self.__consume_keyword("while")
         self.__consume_token(TokenKind.OPEN_PAREN)
@@ -134,15 +133,29 @@ class JSParser:
         self.__consume_token(TokenKind.CLOSE_PAREN)
         if self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
-        node = {
+
+        return {
             "type": "DoWhileStatement",
             "body": body,
             "condition": condition
         }
+
+    def __expression_statement(self):
+        node = {"type": "ExpressionStatement", "body": self.__expression()}
+
+        assert self.lookahead is not None
+
+        if self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token(TokenKind.SEMICOLON)
+
         return node
 
-    def __primary_expression(self):
-        node = {"type": "ExpressionStatement", "body": self.__expression()}
+    def __expression(self):
+        return self.__assignment_expr()
+
+    def __assignment_expr(self):
+        left_token = self.lookahead
+        node = self.__logic_expr()
         ops = [
             TokenKind.ASSIGNMENT, TokenKind.PLUS_ASSIGNMENT,
             TokenKind.MINUS_ASSIGNMENT, TokenKind.MUL_ASSIGNMENT,
@@ -152,18 +165,15 @@ class JSParser:
         assert self.lookahead is not None
 
         if self.lookahead.kind in ops:
+            if node["type"] != "Identifier":
+                self.tokenizer.print_err("Invalid left-hand side", left_token)
             node = {
-                "type": "AssignmentStatement",
+                "type": "AssignmentExpression",
                 "operator": self.__consume_token(self.lookahead.kind).text,
                 "left": node,
                 "right": self.__expression()
             }
-        if self.lookahead.kind == TokenKind.SEMICOLON:
-            self.__consume_token(TokenKind.SEMICOLON)
         return node
-
-    def __expression(self):
-        return self.__logic_expr()
 
     def __logic_expr(self):
         return self.__or_expr()
