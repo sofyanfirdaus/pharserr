@@ -61,7 +61,7 @@ class Token:
     location: Location
 
 
-class Tokenizer(Iterator):
+class Tokenizer(Iterator[Token]):
 
     def __init__(self, content: str, file_path: str,
                  token_pairs: dict[TokenKind, str]) -> None:
