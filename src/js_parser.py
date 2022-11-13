@@ -244,7 +244,7 @@ class JSParser:
                 self.__consume_token(TokenKind.CLOSE_PAREN)
             case TokenKind.WORD:
                 match self.lookahead.text:
-                    case "true" | "false": node = self.__literal()
+                    case "true" | "false" | "null": node = self.__literal()
                     case _: node = self.__identifier()
             case _:
                 node = self.__literal()
@@ -271,7 +271,10 @@ class JSParser:
                 token = self.__consume_token(TokenKind.WORD)
                 return {
                     "type": "Literal",
-                    "value": True if token.text == "true" else False,
+                    "value": None
+                             if token.text == "null"
+                             else True if token.text == "true"
+                             else False,
                     "raw": token.text
                 }
 
