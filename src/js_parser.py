@@ -196,7 +196,7 @@ class JSParser:
 
     def __identifier(self):
         ident = self.__consume_token(TokenKind.WORD)
-        if not self.isKeyword(ident):
+        if not self.is_keyword(ident):
             return {
                 "type": "Identifier",
                 "name": ident.text
@@ -230,8 +230,11 @@ class JSParser:
             self.lookahead = next_token
         return token
 
-    def isKeyword(self, token: Token):
-        return token.text in KEYWORDS
+    def is_keyword(self, token: Token, name: str = ""):
+        yes = token.text in KEYWORDS
+        if name:
+            yes = yes and token.text == name
+        return yes
 
 
 parser = JSParser()
