@@ -24,7 +24,8 @@ BlockStatement
     ;
 
 WhileStatement
-    : 
+    : while (Expression) Statement
+    | while (Expression) { Statement }
 
 PrimaryStatement
     : AssignmentStatement

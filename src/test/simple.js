@@ -1,13 +1,13 @@
 // ini komentar
-20 + 10 / x;
-{
-  // ini block statement
-  10 + "ayo kerja bang"
+// 20 + 10 / x;
+// {
+// ini block statement
+//   10 + "ayo kerja bang"
 
-  {
-    "bisa nested hehe";
-  }
-}
+//   {
+//     "bisa nested hehe";
+//   }
+// }
 
 // tes comparation
 // a < a
@@ -26,6 +26,7 @@
 // x = 2 * 3
 
 // tes while
-while (1 < 5) {
-  i = i + 1
-}
+
+// i = 1
+while (x)
+    ;
