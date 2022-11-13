@@ -192,7 +192,7 @@ class TestParser(unittest.TestCase):
                 }]
             })
         self.assertIsInstance(
-            self.parser.parse_string("1 * 2 / 3"),
+            self.parser.parse_string("1 * 2 / 3 % 4"),
             dict  # artinya parsing sukses
         )
 
@@ -275,7 +275,7 @@ class TestParser(unittest.TestCase):
                 }]
             })
         self.assertIsInstance(
-            self.parser.parse_string("x=x+=x-=x*=x/=x"),
+            self.parser.parse_string("x=x+=x-=x*=x/=x%=x"),
             dict  # parsing sukses
         )
 
