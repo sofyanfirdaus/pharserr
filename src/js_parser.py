@@ -113,7 +113,7 @@ class JSParser:
         return node
 
     def __while_statement(self):
-        self.__consume_token(TokenKind.WORD)
+        self.__consume_keyword("while")
         self.__consume_token(TokenKind.OPEN_PAREN)
         condition = self.__expression()
         self.__consume_token(TokenKind.CLOSE_PAREN)
@@ -183,7 +183,7 @@ class JSParser:
         return node
 
     def __and_expr(self):
-        node = self.__comp_expr()
+        node = self.__binary_expr()
 
         assert self.lookahead is not None
 
@@ -192,12 +192,15 @@ class JSParser:
                 "type": "LogicalExpression",
                 "operator": self.__consume_token(TokenKind.AND).text,
                 "left": node,
-                "right": self.__comp_expr()
+                "right": self.__binary_expr()
             }
         return node
 
+    def __binary_expr(self):
+        return self.__comp_expr()
+
     def __comp_expr(self):
-        node = self.__binary_expr()
+        node = self.__add_expr()
         comp_ops = [
             TokenKind.EQUIV, TokenKind.NEQUIV,
             TokenKind.EQ, TokenKind.NEQ,
@@ -212,12 +215,9 @@ class JSParser:
                 "type": "BinaryExpression",
                 "operator": self.__consume_token(self.lookahead.kind).text,
                 "left": node,
-                "right": self.__binary_expr()
+                "right": self.__add_expr()
             }
         return node
-
-    def __binary_expr(self):
-        return self.__add_expr()
 
     def __add_expr(self):
         node = self.__mul_expr()
@@ -261,7 +261,7 @@ class JSParser:
                 self.__consume_token(TokenKind.CLOSE_PAREN)
             case TokenKind.WORD:
                 match self.lookahead.text:
-                    case "true" | "false": node = self.__literal()
+                    case "true" | "false" | "null": node = self.__literal()
                     case _: node = self.__identifier()
             case _:
                 node = self.__literal()
@@ -288,7 +288,10 @@ class JSParser:
                 token = self.__consume_token(TokenKind.WORD)
                 return {
                     "type": "Literal",
-                    "value": True if token.text == "true" else False,
+                    "value": None
+                             if token.text == "null"
+                             else True if token.text == "true"
+                             else False,
                     "raw": token.text
                 }
 
