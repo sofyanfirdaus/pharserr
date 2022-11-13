@@ -154,7 +154,7 @@ class Tokenizer(Iterator[Token]):
         self.line = self.line.lstrip()
 
         while (len(self.line) == 0 and len(self.content) > 0) or \
-            self.line.startswith(self.token_pairs[TokenKind.LINE_COMMENT]):
+                self.line.startswith(self.token_pairs[TokenKind.LINE_COMMENT]):
             self.__next_line()
 
         if len(self.line) == 0:

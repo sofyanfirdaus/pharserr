@@ -303,9 +303,9 @@ class JSParser:
                 return {
                     "type": "Literal",
                     "value": None
-                             if token.text == "null"
-                             else True if token.text == "true"
-                             else False,
+                            if token.text == "null"
+                            else True if token.text == "true"
+                            else False,
                     "raw": token.text
                 }
             case _:
