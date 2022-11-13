@@ -22,6 +22,7 @@ TOKENS = {
     TokenKind.MINUS_ASSIGNMENT: "-=",
     TokenKind.MUL_ASSIGNMENT: "*=",
     TokenKind.DIV_ASSIGNMENT: "/=",
+    TokenKind.MOD_ASSIGNMENT: "%=",
     TokenKind.ASSIGNMENT: "=",
     TokenKind.GE: ">=",
     TokenKind.LE: "<=",
@@ -33,6 +34,7 @@ TOKENS = {
     TokenKind.MINUS: "-",
     TokenKind.MUL: "*",
     TokenKind.DIV: "/",
+    TokenKind.MOD: "%",
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
 }
@@ -83,6 +85,7 @@ class JSParser:
             match self.lookahead.text:
                 case "while": return self.__while_statement()
                 case "do": return self.__dowhile_statement()
+                case "if": return self.__if_statement()
                 case _: ...
 
         match self.lookahead.kind:
@@ -125,6 +128,23 @@ class JSParser:
             "body": body
         }
 
+    def __if_statement(self) -> dict[str, Any]:
+        node: dict[str, Any] = {"type": "IfStatement"}
+        self.__consume_keyword("if")
+        self.__consume_token(TokenKind.OPEN_PAREN)
+        node["condition"] = self.__expression()
+        self.__consume_token(TokenKind.CLOSE_PAREN)
+        node["body"] = self.__statement()
+
+        assert self.lookahead is not None
+
+        if self.is_keyword(self.lookahead):
+            if self.lookahead.text == "else":
+                self.__consume_keyword("else")
+                node["alternative"] = self.__statement()
+
+        return node
+
     def __dowhile_statement(self) -> dict[str, Any]:
         self.__consume_keyword("do")
         body = self.__statement()
@@ -163,7 +183,7 @@ class JSParser:
         ops = [
             TokenKind.ASSIGNMENT, TokenKind.PLUS_ASSIGNMENT,
             TokenKind.MINUS_ASSIGNMENT, TokenKind.MUL_ASSIGNMENT,
-            TokenKind.DIV_ASSIGNMENT
+            TokenKind.DIV_ASSIGNMENT, TokenKind.MOD_ASSIGNMENT
         ]
 
         assert self.lookahead is not None
@@ -250,7 +270,7 @@ class JSParser:
 
     def __mul_expr(self) -> dict[str, Any]:
         node = self.__prim_expr()
-        mul_ops = [TokenKind.MUL, TokenKind.DIV]
+        mul_ops = [TokenKind.MUL, TokenKind.DIV, TokenKind.MOD]
 
         assert self.lookahead is not None
 

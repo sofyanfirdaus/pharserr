@@ -192,7 +192,7 @@ class TestParser(unittest.TestCase):
                 }]
             })
         self.assertIsInstance(
-            self.parser.parse_string("1 * 2 / 3"),
+            self.parser.parse_string("1 * 2 / 3 % 4"),
             dict  # artinya parsing sukses
         )
 
@@ -275,7 +275,7 @@ class TestParser(unittest.TestCase):
                 }]
             })
         self.assertIsInstance(
-            self.parser.parse_string("x=x+=x-=x*=x/=x"),
+            self.parser.parse_string("x=x+=x-=x*=x/=x%=x"),
             dict  # parsing sukses
         )
 
@@ -549,6 +549,45 @@ class TestParser(unittest.TestCase):
                 }
             }]
         })
+
+    def test_if_statement(self):
+        self.assertDictEqual(
+            self.parser.parse_string("if (true) ;"), {
+                "type": "Program",
+                "body": [{
+                    "type": "IfStatement",
+                    "condition": {
+                        "type": "Literal",
+                        "value": True,
+                        "raw": "true"
+                    },
+                    "body": {
+                        "type": "EmptyStatement"
+                    }
+                }]
+            }
+        )
+
+    def test_if_else_statement(self):
+        self.assertDictEqual(
+            self.parser.parse_string("if (true) ; else ;"), {
+                "type": "Program",
+                "body": [{
+                    "type": "IfStatement",
+                    "condition": {
+                        "type": "Literal",
+                        "value": True,
+                        "raw": "true"
+                    },
+                    "body": {
+                        "type": "EmptyStatement"
+                    },
+                    "alternative": {
+                        "type": "EmptyStatement"
+                    }
+                }]
+            }
+        )
 
 
 if __name__ == '__main__':
