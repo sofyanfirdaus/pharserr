@@ -98,11 +98,6 @@ PrimaryExpression
     | CallExpression
     ;
 
-Literal
-    : NumericLiteral
-    | StringLiteral
-    ;
-
 ParenthesizedExpression
     : ( Expression )
     ;

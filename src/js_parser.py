@@ -243,7 +243,9 @@ class JSParser:
                 node = self.__expression()
                 self.__consume_token(TokenKind.CLOSE_PAREN)
             case TokenKind.WORD:
-                node = self.__identifier()
+                match self.lookahead.text:
+                    case "true" | "false": node = self.__literal()
+                    case _: node = self.__identifier()
             case _:
                 node = self.__literal()
         return node
@@ -265,16 +267,23 @@ class JSParser:
         match self.lookahead.kind:
             case TokenKind.NUMBER_LIT: return self.__numeric_literal()
             case TokenKind.STR_LIT: return self.__str_literal()
+            case TokenKind.WORD:
+                token = self.__consume_token(TokenKind.WORD)
+                return {
+                    "type": "Literal",
+                    "value": True if token.text == "true" else False,
+                    "raw": token.text
+                }
 
     def __numeric_literal(self):
         token = self.__consume_token(TokenKind.NUMBER_LIT)
-        return {"type": "NumericLiteral", "value": int(token.text)}
+        return {"type": "Literal", "value": int(token.text), "raw": token.text}
 
     def __str_literal(self):
         token = self.__consume_token(TokenKind.STR_LIT)
         assert len(token.text) >= 2, "unexpected string literal"
         value = token.text[1:-1]
-        return {"type": "StringLiteral", "value": value, "raw": token.text}
+        return {"type": "Literal", "value": value, "raw": token.text}
 
     def __consume_token(self, kind: TokenKind) -> Token:
         token = self.tokenizer.expect_token(kind)

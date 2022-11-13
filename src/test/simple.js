@@ -26,6 +26,6 @@
 // x = 2 * 3
 
 // tes while
-while (i < 5) {
-  i++;
+while (1 < 5) {
+  i = i + 1
 }
