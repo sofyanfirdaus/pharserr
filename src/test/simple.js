@@ -32,6 +32,5 @@
 //     ;
 
 // tes do while
-do 
-    i = 1
+do;
 while (x)

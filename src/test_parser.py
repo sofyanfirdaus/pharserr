@@ -170,7 +170,37 @@ class TestParser(unittest.TestCase):
                 }
             }]
         })
-
+    
+    def test_dowhile_statement_block(self):
+        self.assertDictEqual(self.parser.parse_string("do {} while (x);"), {
+            "type": "Program",
+            "body": [{
+                "type": "DoWhileStatement",
+                "condition": {
+                    "name": "x",
+                    "type": "Identifier"
+                },
+                "body": {
+                    "body": [],
+                    "type": "BlockStatement"
+                }
+            }]
+        })
+    
+    def test_dowhile_statement_nonblock(self):
+        self.assertDictEqual(self.parser.parse_string("do ; while (x)"), {
+            "type": "Program",
+            "body": [{
+                "type": "DoWhileStatement",
+                "condition": {
+                    "name": "x",
+                    "type": "Identifier"
+                },
+                "body": {
+                    "type": "EmptyStatement"
+                }
+            }]
+        }) 
 
 if __name__ == '__main__':
     unittest.main()
