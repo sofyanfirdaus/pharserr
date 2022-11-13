@@ -47,17 +47,17 @@ KEYWORDS = [
 
 class JSParser:
 
-    def parse_string(self, string: str) -> dict:
+    def parse_string(self, string: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_string(string, TOKENS)
         self.lookahead = self.tokenizer.peek()
         return self.__program()
 
-    def parse_file(self, file_path: str) -> dict:
+    def parse_file(self, file_path: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_file(file_path, TOKENS)
         self.lookahead = self.tokenizer.peek()
         return self.__program()
 
-    def __program(self):
+    def __program(self) -> dict[str, Any]:
         node: dict[Any, Any] = {"type": "Program"}
         if self.lookahead is not None:
             node["body"] = self.__statement_list()
@@ -65,7 +65,7 @@ class JSParser:
             node["body"] = []
         return node
 
-    def __statement_list(self, until: TokenKind | None = None):
+    def __statement_list(self, until: TokenKind | None = None) -> list[dict[str, Any]]:
         statements = [self.__statement()]
 
         assert self.lookahead is not None
@@ -75,7 +75,7 @@ class JSParser:
 
         return statements
 
-    def __statement(self):
+    def __statement(self) -> dict[str, Any]:
 
         assert self.lookahead is not None
 
@@ -83,6 +83,7 @@ class JSParser:
             match self.lookahead.text:
                 case "while": return self.__while_statement()
                 case "do": return self.__dowhile_statement()
+                case _: ...
 
         match self.lookahead.kind:
             case TokenKind.OPEN_CURLY:
@@ -92,11 +93,11 @@ class JSParser:
             case _:
                 return self.__expression_statement()
 
-    def __empty_statement(self):
+    def __empty_statement(self) -> dict[str, Any]:
         self.__consume_token(TokenKind.SEMICOLON)
         return {"type": "EmptyStatement"}
 
-    def __block_statement(self):
+    def __block_statement(self) -> dict[str, Any]:
         self.__consume_token(TokenKind.OPEN_CURLY)
 
         assert self.lookahead is not None
@@ -111,7 +112,7 @@ class JSParser:
 
         return node
 
-    def __while_statement(self):
+    def __while_statement(self) -> dict[str, Any]:
         self.__consume_keyword("while")
         self.__consume_token(TokenKind.OPEN_PAREN)
         condition = self.__expression()
@@ -124,13 +125,16 @@ class JSParser:
             "body": body
         }
 
-    def __dowhile_statement(self):
+    def __dowhile_statement(self) -> dict[str, Any]:
         self.__consume_keyword("do")
         body = self.__statement()
         self.__consume_keyword("while")
         self.__consume_token(TokenKind.OPEN_PAREN)
         condition = self.__expression()
         self.__consume_token(TokenKind.CLOSE_PAREN)
+
+        assert self.lookahead is not None
+
         if self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
@@ -140,7 +144,7 @@ class JSParser:
             "condition": condition
         }
 
-    def __expression_statement(self):
+    def __expression_statement(self) -> dict[str, Any]:
         node = {"type": "ExpressionStatement", "body": self.__expression()}
 
         assert self.lookahead is not None
@@ -150,10 +154,10 @@ class JSParser:
 
         return node
 
-    def __expression(self):
+    def __expression(self) -> dict[str, Any]:
         return self.__assignment_expr()
 
-    def __assignment_expr(self):
+    def __assignment_expr(self) -> dict[str, Any]:
         left_token = self.lookahead
         node = self.__logic_expr()
         ops = [
@@ -175,10 +179,10 @@ class JSParser:
             }
         return node
 
-    def __logic_expr(self):
+    def __logic_expr(self) -> dict[str, Any]:
         return self.__or_expr()
 
-    def __or_expr(self):
+    def __or_expr(self) -> dict[str, Any]:
         node = self.__and_expr()
 
         assert self.lookahead is not None
@@ -192,7 +196,7 @@ class JSParser:
             }
         return node
 
-    def __and_expr(self):
+    def __and_expr(self) -> dict[str, Any]:
         node = self.__binary_expr()
 
         assert self.lookahead is not None
@@ -206,10 +210,10 @@ class JSParser:
             }
         return node
 
-    def __binary_expr(self):
+    def __binary_expr(self) -> dict[str, Any]:
         return self.__comp_expr()
 
-    def __comp_expr(self):
+    def __comp_expr(self) -> dict[str, Any]:
         node = self.__add_expr()
         comp_ops = [
             TokenKind.EQUIV, TokenKind.NEQUIV,
@@ -229,7 +233,7 @@ class JSParser:
             }
         return node
 
-    def __add_expr(self):
+    def __add_expr(self) -> dict[str, Any]:
         node = self.__mul_expr()
         add_ops = [TokenKind.PLUS, TokenKind.MINUS]
 
@@ -244,7 +248,7 @@ class JSParser:
             }
         return node
 
-    def __mul_expr(self):
+    def __mul_expr(self) -> dict[str, Any]:
         node = self.__prim_expr()
         mul_ops = [TokenKind.MUL, TokenKind.DIV]
 
@@ -259,7 +263,7 @@ class JSParser:
             }
         return node
 
-    def __prim_expr(self):
+    def __prim_expr(self) -> dict[str, Any]:
         node = {}
 
         assert self.lookahead is not None
@@ -277,7 +281,7 @@ class JSParser:
                 node = self.__literal()
         return node
 
-    def __identifier(self):
+    def __identifier(self) -> dict[str, Any]:
         ident = self.__consume_token(TokenKind.WORD)
         if not self.is_keyword(ident):
             return {
@@ -287,7 +291,7 @@ class JSParser:
         else:
             self.tokenizer.print_err("unexpected use of keyword", ident)
 
-    def __literal(self):
+    def __literal(self) -> dict[str, Any]:
 
         assert self.lookahead is not None
 
@@ -299,17 +303,19 @@ class JSParser:
                 return {
                     "type": "Literal",
                     "value": None
-                             if token.text == "null"
-                             else True if token.text == "true"
-                             else False,
+                            if token.text == "null"
+                            else True if token.text == "true"
+                            else False,
                     "raw": token.text
                 }
+            case _:
+                raise AssertionError("unreachable")
 
-    def __numeric_literal(self):
+    def __numeric_literal(self) -> dict[str, Any]:
         token = self.__consume_token(TokenKind.NUMBER_LIT)
         return {"type": "Literal", "value": int(token.text), "raw": token.text}
 
-    def __str_literal(self):
+    def __str_literal(self) -> dict[str, Any]:
         token = self.__consume_token(TokenKind.STR_LIT)
         assert len(token.text) >= 2, "unexpected string literal"
         value = token.text[1:-1]
@@ -335,7 +341,7 @@ class JSParser:
             self.lookahead = next_token
         return token
 
-    def is_keyword(self, token):
+    def is_keyword(self, token: Token) -> bool:
         return token.text in KEYWORDS
 
 

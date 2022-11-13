@@ -61,7 +61,7 @@ class Token:
     location: Location
 
 
-class Tokenizer(Iterator):
+class Tokenizer(Iterator[Token]):
 
     def __init__(self, content: str, file_path: str,
                  token_pairs: dict[TokenKind, str]) -> None:
@@ -145,7 +145,7 @@ class Tokenizer(Iterator):
         print("    |")
         print(f"{location.row:>4}| " + self.full_line)
         print("    | {0:>{1}}".format("^" * length, location.col + length - 1))
-        sys.exit(1)
+        raise SyntaxError
 
     def peek(self) -> Token | None:
         if self.peek_token is not None:
@@ -154,7 +154,7 @@ class Tokenizer(Iterator):
         self.line = self.line.lstrip()
 
         while (len(self.line) == 0 and len(self.content) > 0) or \
-            self.line.startswith(self.token_pairs[TokenKind.LINE_COMMENT]):
+                self.line.startswith(self.token_pairs[TokenKind.LINE_COMMENT]):
             self.__next_line()
 
         if len(self.line) == 0:

@@ -279,6 +279,10 @@ class TestParser(unittest.TestCase):
             dict  # parsing sukses
         )
 
+    def test_assignment_invalid(self):
+        with self.assertRaises(SyntaxError):
+            self.parser.parse_string("1 = 2")
+
     def test_precedence_assignment_or(self):
         # expect or dievaluasi duluan
         self.assertDictEqual(
@@ -545,6 +549,7 @@ class TestParser(unittest.TestCase):
                 }
             }]
         })
+
 
 if __name__ == '__main__':
     unittest.main()
