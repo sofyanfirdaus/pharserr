@@ -166,7 +166,7 @@ class JSParser:
         return node
 
     def __and_expr(self):
-        node = self.__comp_expr()
+        node = self.__binary_expr()
 
         assert self.lookahead is not None
 
@@ -175,12 +175,15 @@ class JSParser:
                 "type": "LogicalExpression",
                 "operator": self.__consume_token(TokenKind.AND).text,
                 "left": node,
-                "right": self.__comp_expr()
+                "right": self.__binary_expr()
             }
         return node
 
+    def __binary_expr(self):
+        return self.__comp_expr()
+
     def __comp_expr(self):
-        node = self.__binary_expr()
+        node = self.__add_expr()
         comp_ops = [
             TokenKind.EQUIV, TokenKind.NEQUIV,
             TokenKind.EQ, TokenKind.NEQ,
@@ -195,12 +198,9 @@ class JSParser:
                 "type": "BinaryExpression",
                 "operator": self.__consume_token(self.lookahead.kind).text,
                 "left": node,
-                "right": self.__binary_expr()
+                "right": self.__add_expr()
             }
         return node
-
-    def __binary_expr(self):
-        return self.__add_expr()
 
     def __add_expr(self):
         node = self.__mul_expr()

@@ -60,24 +60,24 @@ OrExpression
     ;
 
 AndExpression
-    : ComparativeExpression
-    | AndExpression && ComparativeExpression
-    ;
-
-ComparativeExpression
     : BinaryExpression
-    | ComparativeExpression > BinaryExpression
-    | ComparativeExpression >= BinaryExpression
-    | ComparativeExpression < BinaryExpression
-    | ComparativeExpression <= BinaryExpression
-    | ComparativeExpression == BinaryExpression
-    | ComparativeExpression != BinaryExpression
-    | ComparativeExpression === BinaryExpression
-    | ComparativeExpression !== BinaryExpression
+    | AndExpression && BinaryExpression
     ;
 
 BinaryExpression
+    : ComparativeExpression
+    ;
+
+ComparativeExpression
     : AdditiveExpression
+    | ComparativeExpression > AdditiveExpression
+    | ComparativeExpression >= AdditiveExpression
+    | ComparativeExpression < AdditiveExpression
+    | ComparativeExpression <= AdditiveExpression
+    | ComparativeExpression == AdditiveExpression
+    | ComparativeExpression != AdditiveExpression
+    | ComparativeExpression === AdditiveExpression
+    | ComparativeExpression !== AdditiveExpression
     ;
 
 AdditiveExpression
