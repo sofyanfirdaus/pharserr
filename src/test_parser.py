@@ -21,8 +21,9 @@ class TestParser(unittest.TestCase):
                 "body": [{
                     "type": "ExpressionStatement",
                     "body": {
-                        "type": "NumericLiteral",
-                        "value": 1
+                        "type": "Literal",
+                        "value": 1,
+                        "raw": "1"
                     }
                 }]
             })
@@ -35,7 +36,7 @@ class TestParser(unittest.TestCase):
                 "body": [{
                     "type": "ExpressionStatement",
                     "body": {
-                        "type": "StringLiteral",
+                        "type": "Literal",
                         "value": "ini string",
                         "raw": '"ini string"'
                     }
@@ -48,7 +49,7 @@ class TestParser(unittest.TestCase):
                 "body": [{
                     "type": "ExpressionStatement",
                     "body": {
-                        "type": "StringLiteral",
+                        "type": "Literal",
                         "value": "ini string",
                         "raw": "'ini string'"
                     }
@@ -61,10 +62,50 @@ class TestParser(unittest.TestCase):
                 "body": [{
                     "type": "ExpressionStatement",
                     "body": {
-                        "type": "StringLiteral",
+                        "type": "Literal",
                         "value": "ini string",
                         "raw": "`ini string`"
                     }
+                }]
+            })
+
+    def test_boolean_literal(self):
+        self.assertDictEqual(
+            self.parser.parse_string("true"), {
+                "type":
+                "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "body": {
+                        "type": "Literal",
+                        "value": True,
+                        "raw": "true"
+                    }
+                }]
+            })
+        self.assertDictEqual(
+            self.parser.parse_string("false"), {
+                "type":
+                "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "body": {
+                        "type": "Literal",
+                        "value": False,
+                        "raw": "false"
+                    }
+                }]
+            })
+
+    # test statement list
+    def test_statement_list(self):
+        self.assertDictEqual(
+            self.parser.parse_string(";\n;"), {
+                "type": "Program",
+                "body": [{
+                    "type": "EmptyStatement"
+                }, {
+                    "type": "EmptyStatement"
                 }]
             })
 
@@ -76,6 +117,28 @@ class TestParser(unittest.TestCase):
                 "type": "EmptyStatement"
             }]
         })
+
+    def test_empty_block_statement(self):
+        self.assertDictEqual(self.parser.parse_string("{}"), {
+            "type": "Program",
+            "body": [{
+                "type": "BlockStatement",
+                "body": []
+            }]
+        })
+
+    def test_block_statement(self):
+        self.assertDictEqual(
+            self.parser.parse_string("{;}"), {
+                "type":
+                "Program",
+                "body": [{
+                    "type": "BlockStatement",
+                    "body": [{
+                        "type": "EmptyStatement",
+                    }]
+                }]
+            })
 
     def test_while_statement_block(self):
         self.assertDictEqual(self.parser.parse_string("while (x) {}"), {
