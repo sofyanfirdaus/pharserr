@@ -112,7 +112,7 @@ class JSParser:
         return node
 
     def __while_statement(self):
-        self.__consume_token(TokenKind.WORD)
+        self.__consume_keyword("while")
         self.__consume_token(TokenKind.OPEN_PAREN)
         condition = self.__expression()
         self.__consume_token(TokenKind.CLOSE_PAREN)
@@ -287,6 +287,16 @@ class JSParser:
 
     def __consume_token(self, kind: TokenKind) -> Token:
         token = self.tokenizer.expect_token(kind)
+        try:
+            next_token = self.tokenizer.peek()
+        except StopIteration:
+            next_token = None
+        if next_token is not None:
+            self.lookahead = next_token
+        return token
+
+    def __consume_keyword(self, name: str) -> Token:
+        token = self.tokenizer.expect_keyword(name)
         try:
             next_token = self.tokenizer.peek()
         except StopIteration:
