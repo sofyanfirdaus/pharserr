@@ -1,6 +1,8 @@
-from typing import Any
-from tokenizer import TokenKind, Tokenizer, Token
+import os
 from pprint import pprint as print
+from typing import Any
+
+from tokenizer import Token, TokenKind, Tokenizer
 
 TOKENS = {
     TokenKind.OPEN_PAREN: "(",
@@ -67,12 +69,17 @@ class JSParser:
     def __statement_list(self, until: TokenKind | None = None):
         statements = [self.__statement()]
 
+        assert self.lookahead is not None
+
         while not self.tokenizer.stop and self.lookahead.kind != until:
             statements.append(self.__statement())
 
         return statements
 
     def __statement(self):
+
+        assert self.lookahead is not None
+
         match self.lookahead.kind:
             case TokenKind.OPEN_CURLY:
                 return self.__block_statement()
@@ -81,6 +88,9 @@ class JSParser:
 
     def __block_statement(self):
         self.__consume_token(TokenKind.OPEN_CURLY)
+
+        assert self.lookahead is not None
+
         node = {
             "type": "BlockStatement",
             "body": self.__statement_list(TokenKind.CLOSE_CURLY)
@@ -98,6 +108,9 @@ class JSParser:
             TokenKind.MINUS_ASSIGNMENT, TokenKind.MUL_ASSIGNMENT,
             TokenKind.DIV_ASSIGNMENT
         ]
+
+        assert self.lookahead is not None
+
         if self.lookahead.kind in ops:
             node = {
                 "type": "AssignmentStatement",
@@ -117,6 +130,9 @@ class JSParser:
 
     def __or_expr(self):
         node = self.__and_expr()
+
+        assert self.lookahead is not None
+
         while self.lookahead.kind == TokenKind.OR:
             node = {
                 "type": "LogicalExpression",
@@ -128,6 +144,9 @@ class JSParser:
 
     def __and_expr(self):
         node = self.__comp_expr()
+
+        assert self.lookahead is not None
+
         while self.lookahead.kind == TokenKind.AND:
             node = {
                 "type": "LogicalExpression",
@@ -145,6 +164,9 @@ class JSParser:
             TokenKind.GE, TokenKind.LE,
             TokenKind.GT, TokenKind.LT
         ]
+
+        assert self.lookahead is not None
+
         while self.lookahead.kind in comp_ops:
             node = {
                 "type": "BinaryExpression",
@@ -160,6 +182,9 @@ class JSParser:
     def __add_expr(self):
         node = self.__mul_expr()
         add_ops = [TokenKind.PLUS, TokenKind.MINUS]
+
+        assert self.lookahead is not None
+
         while self.lookahead.kind in add_ops:
             node = {
                 "type": "BinaryExpression",
@@ -172,6 +197,9 @@ class JSParser:
     def __mul_expr(self):
         node = self.__prim_expr()
         mul_ops = [TokenKind.MUL, TokenKind.DIV]
+
+        assert self.lookahead is not None
+
         while self.lookahead.kind in mul_ops:
             node = {
                 "type": "BinaryExpression",
@@ -183,6 +211,9 @@ class JSParser:
 
     def __prim_expr(self):
         node = {}
+
+        assert self.lookahead is not None
+
         match self.lookahead.kind:
             case TokenKind.OPEN_PAREN:
                 self.__consume_token(TokenKind.OPEN_PAREN)
@@ -205,6 +236,9 @@ class JSParser:
             self.tokenizer.print_err("unexpected use of keyword", ident)
 
     def __literal(self):
+
+        assert self.lookahead is not None
+
         match self.lookahead.kind:
             case TokenKind.NUMBER_LIT: return self.__numeric_literal()
             case TokenKind.STR_LIT: return self.__str_literal()
@@ -238,8 +272,6 @@ class JSParser:
 
 
 parser = JSParser()
-
-import os
 
 print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/simple.js"))
 
