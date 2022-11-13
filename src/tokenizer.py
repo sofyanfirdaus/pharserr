@@ -29,11 +29,13 @@ class TokenKind(Enum):
     MINUS = auto()
     MUL = auto()
     DIV = auto()
+    MOD = auto()
     ASSIGNMENT = auto()
     PLUS_ASSIGNMENT = auto()
     MINUS_ASSIGNMENT = auto()
     MUL_ASSIGNMENT = auto()
     DIV_ASSIGNMENT = auto()
+    MOD_ASSIGNMENT = auto()
     INCR = auto()
     DECR = auto()
     AND = auto()
@@ -81,7 +83,7 @@ class Tokenizer(Iterator[Token]):
 
     @classmethod
     def from_file(cls, file_path: str, token_pairs: dict[TokenKind, str]):
-        with open(file_path) as file:
+        with open(file_path, 'r') as file:
             content = "".join(file.readlines())
         return cls(content, file_path, token_pairs)
 

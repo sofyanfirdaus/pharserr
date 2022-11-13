@@ -33,6 +33,7 @@ TOKENS = {
     TokenKind.MINUS: "-",
     TokenKind.MUL: "*",
     TokenKind.DIV: "/",
+    TokenKind.MOD: "%",
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
 }
@@ -83,6 +84,7 @@ class JSParser:
             match self.lookahead.text:
                 case "while": return self.__while_statement()
                 case "do": return self.__dowhile_statement()
+                case "if": return self.__if_statement()
                 case _: ...
 
         match self.lookahead.kind:
@@ -124,6 +126,23 @@ class JSParser:
             "condition": condition,
             "body": body
         }
+
+    def __if_statement(self) -> dict[str, Any]:
+        node: dict[str, Any] = {"type": "IfStatement"}
+        self.__consume_keyword("if")
+        self.__consume_token(TokenKind.OPEN_PAREN)
+        node["condition"] = self.__expression()
+        self.__consume_token(TokenKind.CLOSE_PAREN)
+        node["body"] = self.__statement()
+
+        assert self.lookahead is not None
+
+        if self.is_keyword(self.lookahead):
+            if self.lookahead.text == "else":
+                self.__consume_keyword("else")
+                node["alternative"] = self.__statement()
+
+        return node
 
     def __dowhile_statement(self) -> dict[str, Any]:
         self.__consume_keyword("do")

@@ -12,6 +12,8 @@ Statement
     | BlockStatement
     | EmptyStatement
     | WhileStatement
+    | DoWhileStatement
+    | IfStatement
     ;
 
 EmptyStatement
@@ -30,6 +32,12 @@ WhileStatement
 DoWhileStatement
     : do Statement while (Expression)
     | do Statement while (Expression);
+    ;
+
+IfStatement
+    : if ( Expression ) Statement
+    | if ( Expression ) Statement else Statement
+    ;
 
 ExpressionStatement
     : Expression
