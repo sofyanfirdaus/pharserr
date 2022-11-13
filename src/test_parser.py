@@ -455,7 +455,7 @@ class TestParser(unittest.TestCase):
                 }
             }]
         })
-    
+
     def test_dowhile_statement_block(self):
         self.assertDictEqual(self.parser.parse_string("do {} while (x);"), {
             "type": "Program",
@@ -471,7 +471,7 @@ class TestParser(unittest.TestCase):
                 }
             }]
         })
-    
+
     def test_dowhile_statement_nonblock(self):
         self.assertDictEqual(self.parser.parse_string("do ; while (x)"), {
             "type": "Program",
