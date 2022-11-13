@@ -145,7 +145,7 @@ class Tokenizer(Iterator):
         print("    |")
         print(f"{location.row:>4}| " + self.full_line)
         print("    | {0:>{1}}".format("^" * length, location.col + length - 1))
-        sys.exit(1)
+        raise SyntaxError
 
     def peek(self) -> Token | None:
         if self.peek_token is not None:
