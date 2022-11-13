@@ -32,7 +32,7 @@ class TestParser(unittest.TestCase):
             }
         )
 
-    def test_string_literal1(self):
+    def test_string_literal(self):
         self.assertDictEqual(
             self.parser.parse_string('"ini string"'), {
                 "type": "Program",
@@ -48,8 +48,6 @@ class TestParser(unittest.TestCase):
                 ]
             }
         )
-
-    def test_string_literal2(self):
         self.assertDictEqual(
             self.parser.parse_string("'ini string'"), {
                 "type": "Program",
@@ -65,8 +63,6 @@ class TestParser(unittest.TestCase):
                 ]
             }
         )
-
-    def test_string_literal3(self):
         self.assertDictEqual(
             self.parser.parse_string("`ini string`"), {
                 "type": "Program",
@@ -86,3 +82,4 @@ class TestParser(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
