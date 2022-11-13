@@ -117,13 +117,12 @@ class JSParser:
         condition = self.__expression()
         self.__consume_token(TokenKind.CLOSE_PAREN)
         body = self.__statement()
-        
-        node = {"type": "WhileStatement",
-                "condition": condition,
-                "body" : body
-        }
 
-        return node
+        return {
+            "type": "WhileStatement",
+            "condition": condition,
+            "body": body
+        }
 
     def __primary_expression(self):
         node = {"type": "ExpressionStatement", "body": self.__expression()}
