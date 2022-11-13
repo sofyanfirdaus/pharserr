@@ -83,8 +83,7 @@ class JSParser:
             match self.lookahead.text:
                 case "while": return self.__while_statement()
                 case "do": return self.__dowhile_statement()
-                case _:
-                    raise AssertionError("unreachable")
+                case _: ...
 
         match self.lookahead.kind:
             case TokenKind.OPEN_CURLY:
