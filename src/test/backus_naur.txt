@@ -10,6 +10,11 @@ StatementList
 Statement
     : PrimaryStatement
     | BlockStatement
+    | EmptyStatement
+    ;
+
+EmptyStatement
+    | ;
     ;
 
 BlockStatement

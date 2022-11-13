@@ -83,8 +83,14 @@ class JSParser:
         match self.lookahead.kind:
             case TokenKind.OPEN_CURLY:
                 return self.__block_statement()
+            case TokenKind.SEMICOLON:
+                return self.__empty_statement()
             case _:
                 return self.__primary_expression()
+
+    def __empty_statement(self):
+        self.__consume_token(TokenKind.SEMICOLON)
+        return {"type": "EmptyStatement"}
 
     def __block_statement(self):
         self.__consume_token(TokenKind.OPEN_CURLY)
@@ -259,7 +265,6 @@ class JSParser:
             next_token = self.tokenizer.peek()
         except StopIteration:
             next_token = None
-        next_token = self.tokenizer.peek()
         if next_token is not None:
             self.lookahead = next_token
         return token
@@ -271,9 +276,9 @@ class JSParser:
         return yes
 
 
-parser = JSParser()
-
-print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/simple.js"))
+# parser = JSParser()
+#
+# print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/simple.js"))
 
 # for token in (tokenizer := Tokenizer.from_file("test/inputAcc.js", TOKENS)):
 #     if token.kind == TokenKind.WORD and token.text == "if":
