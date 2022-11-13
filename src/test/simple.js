@@ -28,5 +28,9 @@
 // tes while
 
 // i = 1
+// while (x)
+//     ;
+
+// tes do while
+do;
 while (x)
-    ;
