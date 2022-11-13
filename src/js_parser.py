@@ -44,84 +44,84 @@ class JSParser:
     def parse_string(self, string: str) -> dict:
         self.tokenizer = Tokenizer.from_string(string, TOKENS)
         self.lookahead = self.tokenizer.peek()
-        return self.__program__()
+        return self.__program()
 
     def parse_file(self, file_path: str) -> dict:
         self.tokenizer = Tokenizer.from_file(file_path, TOKENS)
         self.lookahead = self.tokenizer.peek()
-        return self.__program__()
+        return self.__program()
 
-    def __program__(self):
+    def __program(self):
         node: dict[Any, Any] = {"type": "Program"}
         if self.lookahead is not None:
-            node["body"] = self.__statement_list__()
+            node["body"] = self.__statement_list()
         else:
             node["body"] = []
         return node
 
-    def __statement_list__(self, until: TokenKind | None = None):
-        statements = [self.__statement__()]
+    def __statement_list(self, until: TokenKind | None = None):
+        statements = [self.__statement()]
 
         while not self.tokenizer.stop and self.lookahead.kind != until:
-            statements.append(self.__statement__())
+            statements.append(self.__statement())
 
         return statements
 
-    def __statement__(self):
+    def __statement(self):
         match self.lookahead.kind:
             case TokenKind.OPEN_CURLY:
-                return self.__block_statement__()
+                return self.__block_statement()
             case _:
-                return self.__expression_statement__()
+                return self.__expression_statement()
 
-    def __block_statement__(self):
-        self.__consume_token__(TokenKind.OPEN_CURLY)
+    def __block_statement(self):
+        self.__consume_token(TokenKind.OPEN_CURLY)
         node = {
             "type": "BlockStatement",
-            "body": self.__statement_list__(TokenKind.CLOSE_CURLY)
+            "body": self.__statement_list(TokenKind.CLOSE_CURLY)
                     if self.lookahead.kind != TokenKind.CLOSE_CURLY
                     else []
         }
-        self.__consume_token__(TokenKind.CLOSE_CURLY)
+        self.__consume_token(TokenKind.CLOSE_CURLY)
 
         return node
 
-    def __expression_statement__(self):
-        node = {"type": "ExpressionStatement", "body": self.__expression__()}
+    def __expression_statement(self):
+        node = {"type": "ExpressionStatement", "body": self.__expression()}
         if self.lookahead.kind == TokenKind.SEMICOLON:
-            self.__consume_token__(TokenKind.SEMICOLON)
+            self.__consume_token(TokenKind.SEMICOLON)
         return node
 
-    def __expression__(self):
-        return self.__logic_expr__()
+    def __expression(self):
+        return self.__logic_expr()
 
-    def __logic_expr__(self):
-        return self.__or_expr__()
+    def __logic_expr(self):
+        return self.__or_expr()
 
-    def __or_expr__(self):
-        node = self.__and_expr__()
+    def __or_expr(self):
+        node = self.__and_expr()
         while self.lookahead.kind == TokenKind.OR:
             node = {
                 "type": "LogicalExpression",
-                "operator": self.__consume_token__(TokenKind.OR).text,
+                "operator": self.__consume_token(TokenKind.OR).text,
                 "left": node,
-                "right": self.__and_expr__()
+                "right": self.__and_expr()
             }
         return node
 
-    def __and_expr__(self):
-        node = self.__comp_expr__()
+    def __and_expr(self):
+        node = self.__comp_expr()
         while self.lookahead.kind == TokenKind.AND:
             node = {
                 "type": "LogicalExpression",
-                "operator": self.__consume_token__(TokenKind.AND).text,
+                "operator": self.__consume_token(TokenKind.AND).text,
                 "left": node,
-                "right": self.__comp_expr__()
+                "right": self.__comp_expr()
             }
         return node
 
-    def __comp_expr__(self):
-        node = self.__binary_expr__()
+    def __comp_expr(self):
+        node = self.__binary_expr()
         comp_ops = [
             TokenKind.EQUIV, TokenKind.NEQUIV,
             TokenKind.EQ, TokenKind.NEQ,
@@ -131,54 +131,54 @@ class JSParser:
         while self.lookahead.kind in comp_ops:
             node = {
                 "type": "BinaryExpression",
-                "operator": self.__consume_token__(self.lookahead.kind).text,
+                "operator": self.__consume_token(self.lookahead.kind).text,
                 "left": node,
-                "right": self.__binary_expr__()
+                "right": self.__binary_expr()
             }
         return node
 
-    def __binary_expr__(self):
-        return self.__add_expr__()
+    def __binary_expr(self):
+        return self.__add_expr()
 
-    def __add_expr__(self):
-        node = self.__mul_expr__()
+    def __add_expr(self):
+        node = self.__mul_expr()
         add_ops = [TokenKind.PLUS, TokenKind.MINUS]
         while self.lookahead.kind in add_ops:
             node = {
                 "type": "BinaryExpression",
-                "operator": self.__consume_token__(self.lookahead.kind).text,
+                "operator": self.__consume_token(self.lookahead.kind).text,
                 "left": node,
-                "right": self.__mul_expr__()
+                "right": self.__mul_expr()
             }
         return node
 
-    def __mul_expr__(self):
-        node = self.__prim_expr__()
+    def __mul_expr(self):
+        node = self.__prim_expr()
         mul_ops = [TokenKind.MUL, TokenKind.DIV]
         while self.lookahead.kind in mul_ops:
             node = {
                 "type": "BinaryExpression",
-                "operator": self.__consume_token__(self.lookahead.kind).text,
+                "operator": self.__consume_token(self.lookahead.kind).text,
                 "left": node,
-                "right": self.__prim_expr__()
+                "right": self.__prim_expr()
             }
         return node
 
-    def __prim_expr__(self):
+    def __prim_expr(self):
         node = {}
         match self.lookahead.kind:
             case TokenKind.OPEN_PAREN:
-                self.__consume_token__(TokenKind.OPEN_PAREN)
-                node = self.__expression__()
-                self.__consume_token__(TokenKind.CLOSE_PAREN)
+                self.__consume_token(TokenKind.OPEN_PAREN)
+                node = self.__expression()
+                self.__consume_token(TokenKind.CLOSE_PAREN)
             case TokenKind.WORD:
-                node = self.__identifier__()
+                node = self.__identifier()
             case _:
-                node = self.__literal__()
+                node = self.__literal()
         return node
 
-    def __identifier__(self):
-        ident = self.__consume_token__(TokenKind.WORD)
+    def __identifier(self):
+        ident = self.__consume_token(TokenKind.WORD)
         if not self.isKeyword(ident):
             return {
                 "type": "Identifier",
@@ -187,22 +187,22 @@ class JSParser:
         else:
             self.tokenizer.print_err("unexpected use of keyword", ident)
 
-    def __literal__(self):
+    def __literal(self):
         match self.lookahead.kind:
-            case TokenKind.NUMBER_LIT: return self.__numeric_literal__()
-            case TokenKind.STR_LIT: return self.__str_literal__()
+            case TokenKind.NUMBER_LIT: return self.__numeric_literal()
+            case TokenKind.STR_LIT: return self.__str_literal()
 
-    def __numeric_literal__(self):
-        token = self.__consume_token__(TokenKind.NUMBER_LIT)
+    def __numeric_literal(self):
+        token = self.__consume_token(TokenKind.NUMBER_LIT)
         return {"type": "NumericLiteral", "value": int(token.text)}
 
-    def __str_literal__(self):
-        token = self.__consume_token__(TokenKind.STR_LIT)
+    def __str_literal(self):
+        token = self.__consume_token(TokenKind.STR_LIT)
         assert len(token.text) >= 2, "unexpected string literal"
         value = token.text[1:-1]
         return {"type": "StringLiteral", "value": value, "raw": token.text}
 
-    def __consume_token__(self, kind: TokenKind) -> Token:
+    def __consume_token(self, kind: TokenKind) -> Token:
         token = self.tokenizer.expect_token(kind)
         try:
             next_token = self.tokenizer.peek()
