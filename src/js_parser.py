@@ -22,6 +22,7 @@ TOKENS = {
     TokenKind.MINUS_ASSIGNMENT: "-=",
     TokenKind.MUL_ASSIGNMENT: "*=",
     TokenKind.DIV_ASSIGNMENT: "/=",
+    TokenKind.MOD_ASSIGNMENT: "%=",
     TokenKind.ASSIGNMENT: "=",
     TokenKind.GE: ">=",
     TokenKind.LE: "<=",
@@ -182,7 +183,7 @@ class JSParser:
         ops = [
             TokenKind.ASSIGNMENT, TokenKind.PLUS_ASSIGNMENT,
             TokenKind.MINUS_ASSIGNMENT, TokenKind.MUL_ASSIGNMENT,
-            TokenKind.DIV_ASSIGNMENT
+            TokenKind.DIV_ASSIGNMENT, TokenKind.MOD_ASSIGNMENT
         ]
 
         assert self.lookahead is not None
@@ -269,7 +270,7 @@ class JSParser:
 
     def __mul_expr(self) -> dict[str, Any]:
         node = self.__prim_expr()
-        mul_ops = [TokenKind.MUL, TokenKind.DIV]
+        mul_ops = [TokenKind.MUL, TokenKind.DIV, TokenKind.MOD]
 
         assert self.lookahead is not None
 
