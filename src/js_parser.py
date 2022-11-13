@@ -80,6 +80,9 @@ class JSParser:
 
         assert self.lookahead is not None
 
+        if (self.is_keyword(self.lookahead,"while")):
+            return self.__while_statement()
+
         match self.lookahead.kind:
             case TokenKind.OPEN_CURLY:
                 return self.__block_statement()
@@ -104,6 +107,20 @@ class JSParser:
                     else []
         }
         self.__consume_token(TokenKind.CLOSE_CURLY)
+
+        return node
+
+    def __while_statement(self):
+        self.__consume_token(TokenKind.WORD)
+        self.__consume_token(TokenKind.OPEN_PAREN)
+        condition = self.__expression()
+        self.__consume_token(TokenKind.CLOSE_PAREN)
+        body = self.__statement()
+        
+        node = {"type": "WhileStatement",
+                "condition": condition,
+                "body" : body
+        }
 
         return node
 
@@ -276,9 +293,9 @@ class JSParser:
         return yes
 
 
-# parser = JSParser()
-#
-# print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/simple.js"))
+parser = JSParser()
+
+print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/simple.js"))
 
 # for token in (tokenizer := Tokenizer.from_file("test/inputAcc.js", TOKENS)):
 #     if token.kind == TokenKind.WORD and token.text == "if":
