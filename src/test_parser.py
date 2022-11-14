@@ -140,16 +140,15 @@ class TestParser(unittest.TestCase):
                 }]
             })
 
-    def test_binary_additive_expression(self):
+    def test_power_expression(self):
         self.assertDictEqual(
-            self.parser.parse_string("1 + 2"), {
-                "type":
-                "Program",
+            self.parser.parse_string("1 ** 2"), {
+                "type": "Program",
                 "body": [{
                     "type": "ExpressionStatement",
                     "body": {
                         "type": "BinaryExpression",
-                        "operator": "+",
+                        "operator": "**",
                         "left": {
                             "type": "Literal",
                             "value": 1,
@@ -162,10 +161,7 @@ class TestParser(unittest.TestCase):
                         }
                     }
                 }]
-            })
-        self.assertIsInstance(
-            self.parser.parse_string("1 + 2 - 3"),
-            dict  # artinya parsing sukses
+            }
         )
 
     def test_binary_multiplicative_expression(self):
@@ -193,6 +189,34 @@ class TestParser(unittest.TestCase):
             })
         self.assertIsInstance(
             self.parser.parse_string("1 * 2 / 3 % 4"),
+            dict  # artinya parsing sukses
+        )
+
+    def test_binary_additive_expression(self):
+        self.assertDictEqual(
+            self.parser.parse_string("1 + 2"), {
+                "type":
+                "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "body": {
+                        "type": "BinaryExpression",
+                        "operator": "+",
+                        "left": {
+                            "type": "Literal",
+                            "value": 1,
+                            "raw": "1"
+                        },
+                        "right": {
+                            "type": "Literal",
+                            "value": 2,
+                            "raw": "2"
+                        }
+                    }
+                }]
+            })
+        self.assertIsInstance(
+            self.parser.parse_string("1 + 2 - 3"),
             dict  # artinya parsing sukses
         )
 
@@ -452,10 +476,10 @@ class TestParser(unittest.TestCase):
                 }]
             })
 
-    def test_precedence_multiplicative_parenthesized(self):
+    def test_precedence_multiplicative_power(self):
         # expect ekspresi dalam kurung dievaluasi duluan
         self.assertDictEqual(
-            self.parser.parse_string("(x = 1) * 2"),
+            self.parser.parse_string("1 * 2 ** 4"),
             {
                 "type":
                 "Program",
@@ -465,6 +489,38 @@ class TestParser(unittest.TestCase):
                         "type": "BinaryExpression",
                         "operator": "*",
                         "left": {
+                            "type": "Literal",
+                            "value": 1,
+                            "raw": "1"
+                        },
+                        "right": {
+                            "type": "BinaryExpression",
+                            "operator": "**",
+                            "left": {
+                                "type": "Literal",
+                                "value": 2,
+                                "raw": "2"
+                            },
+                            "right": {
+                                "type": "Literal",
+                                "value": 4,
+                                "raw": "4"
+                            }
+                        }
+                    }
+                }]
+            })
+
+    def test_precedence_power_parenthesized(self):
+        self.assertDictEqual(
+            self.parser.parse_string("(x = 2) ** 2"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "body": {
+                        "type": "BinaryExpression",
+                        "operator": "**",
+                        "left": {
                             "type": "AssignmentExpression",
                             "operator": "=",
                             "left": {
@@ -473,8 +529,8 @@ class TestParser(unittest.TestCase):
                             },
                             "right": {
                                 "type": "Literal",
-                                "value": 1,
-                                "raw": "1"
+                                "value": 2,
+                                "raw": "2"
                             }
                         },
                         "right": {
@@ -484,7 +540,8 @@ class TestParser(unittest.TestCase):
                         }
                     }
                 }]
-            })
+            }
+        )
 
     def test_while_statement_block(self):
         self.assertDictEqual(
