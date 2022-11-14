@@ -18,6 +18,7 @@ TOKENS = {
     TokenKind.NEQUIV: "!==",
     TokenKind.EQ: "==",
     TokenKind.NEQ: "!=",
+    TokenKind.POW: "**",
     TokenKind.PLUS_ASSIGNMENT: "+=",
     TokenKind.MINUS_ASSIGNMENT: "-=",
     TokenKind.MUL_ASSIGNMENT: "*=",
@@ -269,12 +270,26 @@ class JSParser:
         return node
 
     def __mul_expr(self) -> dict[str, Any]:
-        node = self.__prim_expr()
+        node = self.__pow_expr()
         mul_ops = [TokenKind.MUL, TokenKind.DIV, TokenKind.MOD]
 
         assert self.lookahead is not None
 
         while self.lookahead.kind in mul_ops:
+            node = {
+                "type": "BinaryExpression",
+                "operator": self.__consume_token(self.lookahead.kind).text,
+                "left": node,
+                "right": self.__pow_expr()
+            }
+        return node
+
+    def __pow_expr(self) -> dict[str, Any]:
+        node = self.__prim_expr()
+
+        assert self.lookahead is not None
+
+        while self.lookahead.kind == TokenKind.POW:
             node = {
                 "type": "BinaryExpression",
                 "operator": self.__consume_token(self.lookahead.kind).text,

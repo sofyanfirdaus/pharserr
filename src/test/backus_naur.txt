@@ -75,7 +75,7 @@ BinaryExpression
 ComparativeExpression
     : AdditiveExpression
     | ComparativeExpression > AdditiveExpression
-    | ComparativeExpression >= AdditiveExpression
+    | ComprrativeExpression >= AdditiveExpression
     | ComparativeExpression < AdditiveExpression
     | ComparativeExpression <= AdditiveExpression
     | ComparativeExpression == AdditiveExpression
@@ -91,9 +91,15 @@ AdditiveExpression
     ;
 
 MultiplicativeExpression
+    : PowerExpression
+    | MultiplicativeExpression * PowerExpression
+    | MultiplicativeExpression / PowerExpression
+    | MultiplicativeExpression % PowerExpression
+    ;
+
+PowerExpression
     : PrimaryExpression
-    | MultiplicativeExpression * PrimaryExpression
-    | MultiplicativeExpression / PrimaryExpression
+    | PowerExpression ** PrimaryExpression
     ;
 
 PrimaryExpression

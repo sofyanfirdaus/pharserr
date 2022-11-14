@@ -30,6 +30,7 @@ class TokenKind(Enum):
     MUL = auto()
     DIV = auto()
     MOD = auto()
+    POW = auto()
     ASSIGNMENT = auto()
     PLUS_ASSIGNMENT = auto()
     MINUS_ASSIGNMENT = auto()
