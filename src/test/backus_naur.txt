@@ -13,7 +13,7 @@ Statement
     | EmptyStatement
     | WhileStatement
     | DoWhileStatement
-
+    | ForStatement
     | IfStatement
     | TryStatement
     | VariableDeclaration
@@ -36,6 +36,9 @@ DoWhileStatement
     : do Statement while (Expression)
     | do Statement while (Expression);
     ;
+
+ForStatement
+    : for (Expression; Expression; Expression) Statement
 
 IfStatement
     : if ( Expression ) Statement
@@ -67,6 +70,7 @@ VariableDeclaratorList
     ;
 
 VariableDeclarator
+    | Identifier
     | Identifier = Expression
     ;
 
