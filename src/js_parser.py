@@ -87,6 +87,8 @@ class JSParser:
                 case "while": return self.__while_statement()
                 case "do": return self.__dowhile_statement()
                 case "if": return self.__if_statement()
+                case "try": return self.__try_statement()
+                case "var" | "let" | "const": return self.__variable_declaration()
                 case _: ...
 
         match self.lookahead.kind:
@@ -146,6 +148,45 @@ class JSParser:
 
         return node
 
+    def __try_statement(self) -> dict[str, Any]:
+        self.__consume_keyword("try")
+        block = self.__block_statement()
+        handler = self.__catch_clause()
+
+        assert self.lookahead is not None
+
+        finalizer = None
+        if self.is_keyword(self.lookahead):
+            if self.lookahead.text == "finally":
+                self.__consume_keyword("finally")
+                finalizer = self.__block_statement()
+
+        return {
+            "type": "TryStatement",
+            "block": block,
+            "handler": handler,
+            "finalizer": finalizer
+        }
+
+    def __catch_clause(self) -> dict[str, Any] | None:
+        assert self.lookahead is not None
+
+        self.__consume_keyword("catch")
+
+        param = None
+        if self.lookahead.kind == TokenKind.OPEN_PAREN:
+            self.__consume_token(TokenKind.OPEN_PAREN)
+            param = self.__identifier()
+            self.__consume_token(TokenKind.CLOSE_PAREN)
+
+        body = self.__block_statement()
+
+        return {
+            "type": "CatchClause",
+            "param": param,
+            "body": body
+        }
+
     def __dowhile_statement(self) -> dict[str, Any]:
         self.__consume_keyword("do")
         body = self.__statement()
@@ -174,6 +215,35 @@ class JSParser:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return node
+
+    def __variable_declaration(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        kind = self.__consume_keyword(self.lookahead.text)
+        declarations = [self.__variable_declarator()]
+
+        while self.lookahead.kind == TokenKind.COMMA:
+            declarations.append(self.__variable_declarator())
+
+        if self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token(TokenKind.SEMICOLON)
+
+        return {
+            "type": "VariableDeclaration",
+            "kind": kind.text,
+            "declarations": declarations,
+        }
+
+    def __variable_declarator(self) -> dict[str, Any]:
+        id = self.__identifier()
+        self.__consume_token(TokenKind.ASSIGNMENT)
+        init = self.__expression()
+
+        return {
+            "type": "VariableDeclarator",
+            "id": id,
+            "init": init
+        }
 
     def __expression(self) -> dict[str, Any]:
         return self.__assignment_expr()

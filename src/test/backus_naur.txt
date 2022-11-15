@@ -13,7 +13,10 @@ Statement
     | EmptyStatement
     | WhileStatement
     | DoWhileStatement
+
     | IfStatement
+    | TryStatement
+    | VariableDeclaration
     ;
 
 EmptyStatement
@@ -39,9 +42,32 @@ IfStatement
     | if ( Expression ) Statement else Statement
     ;
 
+TryStatement
+    : try BlockStatement catch ( Identifier ) BlockStatement
+    | try BlockStatement catch ( Identifier ) BlockStatement finally BlockStatement
+    ;
+
 ExpressionStatement
     : Expression
     | Expression ;
+    ;
+
+VariableDeclaration
+    : var VariableDeclaratorList
+    | var VariableDeclaratorList ;
+    | let VariableDeclaratorList
+    | let VariableDeclaratorList ;
+    | const VariableDeclaratorList
+    | const VariableDeclaratorList ;
+    ;
+
+VariableDeclaratorList
+    | VariableDeclarator
+    | VariableDeclaratorList , VariableDeclarator
+    ;
+
+VariableDeclarator
+    | Identifier = Expression
     ;
 
 Expression
