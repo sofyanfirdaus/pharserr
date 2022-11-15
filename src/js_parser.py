@@ -89,6 +89,7 @@ class JSParser:
                 case "for": return self.__for_statement()
                 case "if": return self.__if_statement()
                 case "try": return self.__try_statement()
+                case "return": return self.__return_statement()
                 case "var" | "let" | "const": return self.__variable_declaration()
                 case _: ...
 
@@ -203,6 +204,20 @@ class JSParser:
             "block": block,
             "handler": handler,
             "finalizer": finalizer
+        }
+
+    def __return_statement(self) -> dict[str, Any]:
+        self.__consume_keyword("return")
+        arg = self.__expression()
+
+        assert self.lookahead is not None
+
+        if self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token(TokenKind.SEMICOLON)
+
+        return {
+            "type": "ReturnStatement",
+            "argument": arg
         }
 
     def __catch_clause(self) -> dict[str, Any] | None:
@@ -398,7 +413,7 @@ class JSParser:
         return node
 
     def __pow_expr(self) -> dict[str, Any]:
-        node = self.__prim_expr()
+        node = self.__unary_expr()
 
         assert self.lookahead is not None
 
@@ -407,8 +422,24 @@ class JSParser:
                 "type": "BinaryExpression",
                 "operator": self.__consume_token(self.lookahead.kind).text,
                 "left": node,
-                "right": self.__prim_expr()
+                "right": self.__unary_expr()
             }
+        return node
+
+    def __unary_expr(self) -> dict[str, Any]:
+        node: dict[str, Any] = {"type": "UnaryOperator"}
+
+        assert self.lookahead is not None
+
+        match self.lookahead.kind:
+            case TokenKind.PLUS:
+                node["operator"] = self.__consume_token(TokenKind.PLUS).text
+                node["argument"] = self.__prim_expr()
+            case TokenKind.MINUS:
+                node["operator"] = self.__consume_token(TokenKind.MINUS).text
+                node["argument"] = self.__prim_expr()
+            case _: node = self.__prim_expr()
+
         return node
 
     def __prim_expr(self) -> dict[str, Any]:

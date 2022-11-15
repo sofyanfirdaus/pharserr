@@ -16,6 +16,7 @@ Statement
     | ForStatement
     | IfStatement
     | TryStatement
+    | ReturnStatement
     | VariableDeclaration
     ;
 
@@ -48,6 +49,11 @@ IfStatement
 TryStatement
     : try BlockStatement catch ( Identifier ) BlockStatement
     | try BlockStatement catch ( Identifier ) BlockStatement finally BlockStatement
+    ;
+
+ReturnStatement
+    : return Expression
+    | return Expression ;
     ;
 
 ExpressionStatement
@@ -128,8 +134,14 @@ MultiplicativeExpression
     ;
 
 PowerExpression
+    : UnaryExpression
+    | PowerExpression ** UnaryExpression
+    ;
+
+UnaryExpression
     : PrimaryExpression
-    | PowerExpression ** PrimaryExpression
+    | + PrimaryExpression
+    | - PrimaryExpression
     ;
 
 PrimaryExpression
