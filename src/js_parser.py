@@ -86,7 +86,11 @@ class JSParser:
             match self.lookahead.text:
                 case "while": return self.__while_statement()
                 case "do": return self.__dowhile_statement()
+                case "for": return self.__for_statement()
                 case "if": return self.__if_statement()
+                case "try": return self.__try_statement()
+                case "return": return self.__return_statement()
+                case "var" | "let" | "const": return self.__variable_declaration()
                 case _: ...
 
         match self.lookahead.kind:
@@ -129,6 +133,42 @@ class JSParser:
             "body": body
         }
 
+    def __for_statement(self) -> dict[str, Any]:
+        self.__consume_keyword("for")
+        self.__consume_token(TokenKind.OPEN_PAREN)
+
+        assert self.lookahead is not None
+
+        init = test = update = None
+
+        if self.is_keyword(self.lookahead):
+            match self.lookahead.text:
+                case "var" | "let" | "const": init = self.__variable_declaration()
+                case _: ...
+        else:
+            if self.lookahead.kind != TokenKind.SEMICOLON:
+                init = self.__expression()
+            self.__consume_token(TokenKind.SEMICOLON)
+
+        if self.lookahead.kind != TokenKind.SEMICOLON:
+            test = self.__expression()
+        self.__consume_token(TokenKind.SEMICOLON)
+
+        if self.lookahead.kind != TokenKind.CLOSE_PAREN:
+            update = self.__expression()
+
+        self.__consume_token(TokenKind.CLOSE_PAREN)
+
+        body = self.__statement()
+
+        return {
+            "type": "ForStatement",
+            "init": init,
+            "test": test,
+            "update": update,
+            "body": body
+        }
+
     def __if_statement(self) -> dict[str, Any]:
         node: dict[str, Any] = {"type": "IfStatement"}
         self.__consume_keyword("if")
@@ -145,6 +185,59 @@ class JSParser:
                 node["alternative"] = self.__statement()
 
         return node
+
+    def __try_statement(self) -> dict[str, Any]:
+        self.__consume_keyword("try")
+        block = self.__block_statement()
+        handler = self.__catch_clause()
+
+        assert self.lookahead is not None
+
+        finalizer = None
+        if self.is_keyword(self.lookahead):
+            if self.lookahead.text == "finally":
+                self.__consume_keyword("finally")
+                finalizer = self.__block_statement()
+
+        return {
+            "type": "TryStatement",
+            "block": block,
+            "handler": handler,
+            "finalizer": finalizer
+        }
+
+    def __return_statement(self) -> dict[str, Any]:
+        self.__consume_keyword("return")
+        arg = self.__expression()
+
+        assert self.lookahead is not None
+
+        if self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token(TokenKind.SEMICOLON)
+
+        return {
+            "type": "ReturnStatement",
+            "argument": arg
+        }
+
+    def __catch_clause(self) -> dict[str, Any] | None:
+        assert self.lookahead is not None
+
+        self.__consume_keyword("catch")
+
+        param = None
+        if self.lookahead.kind == TokenKind.OPEN_PAREN:
+            self.__consume_token(TokenKind.OPEN_PAREN)
+            param = self.__identifier()
+            self.__consume_token(TokenKind.CLOSE_PAREN)
+
+        body = self.__block_statement()
+
+        return {
+            "type": "CatchClause",
+            "param": param,
+            "body": body
+        }
 
     def __dowhile_statement(self) -> dict[str, Any]:
         self.__consume_keyword("do")
@@ -174,6 +267,41 @@ class JSParser:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return node
+
+    def __variable_declaration(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        kind = self.__consume_keyword(self.lookahead.text)
+        declarations = [self.__variable_declarator()]
+
+        while self.lookahead.kind == TokenKind.COMMA:
+            self.__consume_token(TokenKind.COMMA)
+            declarations.append(self.__variable_declarator())
+
+        if self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token(TokenKind.SEMICOLON)
+
+        return {
+            "type": "VariableDeclaration",
+            "kind": kind.text,
+            "declarations": declarations,
+        }
+
+    def __variable_declarator(self) -> dict[str, Any]:
+        id = self.__identifier()
+
+        assert self.lookahead is not None
+
+        init = None
+        if self.lookahead.kind == TokenKind.ASSIGNMENT:
+            self.__consume_token(TokenKind.ASSIGNMENT)
+            init = self.__expression()
+
+        return {
+            "type": "VariableDeclarator",
+            "id": id,
+            "init": init
+        }
 
     def __expression(self) -> dict[str, Any]:
         return self.__assignment_expr()
@@ -285,7 +413,7 @@ class JSParser:
         return node
 
     def __pow_expr(self) -> dict[str, Any]:
-        node = self.__prim_expr()
+        node = self.__unary_expr()
 
         assert self.lookahead is not None
 
@@ -294,8 +422,24 @@ class JSParser:
                 "type": "BinaryExpression",
                 "operator": self.__consume_token(self.lookahead.kind).text,
                 "left": node,
-                "right": self.__prim_expr()
+                "right": self.__unary_expr()
             }
+        return node
+
+    def __unary_expr(self) -> dict[str, Any]:
+        node: dict[str, Any] = {"type": "UnaryOperator"}
+
+        assert self.lookahead is not None
+
+        match self.lookahead.kind:
+            case TokenKind.PLUS:
+                node["operator"] = self.__consume_token(TokenKind.PLUS).text
+                node["argument"] = self.__prim_expr()
+            case TokenKind.MINUS:
+                node["operator"] = self.__consume_token(TokenKind.MINUS).text
+                node["argument"] = self.__prim_expr()
+            case _: node = self.__prim_expr()
+
         return node
 
     def __prim_expr(self) -> dict[str, Any]:
@@ -343,8 +487,8 @@ class JSParser:
                             else False,
                     "raw": token.text
                 }
-            case _:
-                raise AssertionError("unreachable")
+            case _ as text:
+                raise AssertionError(f"unreachable: {text}")
 
     def __numeric_literal(self) -> dict[str, Any]:
         token = self.__consume_token(TokenKind.NUMBER_LIT)
