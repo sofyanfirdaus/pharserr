@@ -20,7 +20,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "Literal",
                         "value": 1,
                         "raw": "1"
@@ -35,7 +35,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "Literal",
                         "value": "ini string",
                         "raw": '"ini string"'
@@ -48,7 +48,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "Literal",
                         "value": "ini string",
                         "raw": "'ini string'"
@@ -61,7 +61,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "Literal",
                         "value": "ini string",
                         "raw": "`ini string`"
@@ -76,7 +76,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "Literal",
                         "value": True,
                         "raw": "true"
@@ -89,7 +89,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "Literal",
                         "value": False,
                         "raw": "false"
@@ -146,7 +146,7 @@ class TestParser(unittest.TestCase):
                 "type": "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "BinaryExpression",
                         "operator": "**",
                         "left": {
@@ -171,7 +171,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "BinaryExpression",
                         "operator": "*",
                         "left": {
@@ -199,7 +199,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "BinaryExpression",
                         "operator": "+",
                         "left": {
@@ -227,7 +227,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "BinaryExpression",
                         "operator": "<",
                         "left": {
@@ -255,7 +255,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "LogicalExpression",
                         "operator": "&&",
                         "left": {
@@ -283,7 +283,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "AssignmentExpression",
                         "operator": "=",
                         "left": {
@@ -307,6 +307,58 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(SyntaxError):
             self.parser.parse_string("1 = 2")
 
+    def test_update_expression_noprefix(self):
+        self.assertDictEqual(
+            self.parser.parse_string("x++"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "expression": {
+                        "type": "UpdateExpression",
+                        "prefix": False,
+                        "operator": "++",
+                        "argument": {
+                            "type": "Identifier",
+                            "name": "x"
+                        }
+                    }
+                }]
+            }
+        )
+        self.assertIsInstance(
+            self.parser.parse_string("x++;x--"),
+            dict
+        )
+
+    def test_update_expression_prefix(self):
+        self.assertDictEqual(
+            self.parser.parse_string("++x"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "expression": {
+                        "type": "UpdateExpression",
+                        "prefix": True,
+                        "operator": "++",
+                        "argument": {
+                            "type": "Identifier",
+                            "name": "x"
+                        }
+                    }
+                }]
+            }
+        )
+        self.assertIsInstance(
+            self.parser.parse_string("++x;--x"),
+            dict
+        )
+
+    def test_update_expression_invalid(self):
+        with self.assertRaises(SyntaxError):
+            self.parser.parse_string("1++")
+        with self.assertRaises(SyntaxError):
+            self.parser.parse_string("++1")
+
     def test_precedence_assignment_or(self):
         # expect or dievaluasi duluan
         self.assertDictEqual(
@@ -314,7 +366,7 @@ class TestParser(unittest.TestCase):
                 "type": "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "AssignmentExpression",
                         "operator": "=",
                         "left": {
@@ -347,7 +399,7 @@ class TestParser(unittest.TestCase):
                 "type": "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "LogicalExpression",
                         "operator": "||",
                         "left": {
@@ -381,7 +433,7 @@ class TestParser(unittest.TestCase):
                 "type": "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "LogicalExpression",
                         "operator": "&&",
                         "left": {
@@ -415,7 +467,7 @@ class TestParser(unittest.TestCase):
                 "type": "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "BinaryExpression",
                         "operator": "<",
                         "left": {
@@ -450,7 +502,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "BinaryExpression",
                         "operator": "+",
                         "left": {
@@ -485,7 +537,7 @@ class TestParser(unittest.TestCase):
                 "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "BinaryExpression",
                         "operator": "*",
                         "left": {
@@ -517,7 +569,7 @@ class TestParser(unittest.TestCase):
                 "type": "Program",
                 "body": [{
                     "type": "ExpressionStatement",
-                    "body": {
+                    "expression": {
                         "type": "BinaryExpression",
                         "operator": "**",
                         "left": {
@@ -618,9 +670,10 @@ class TestParser(unittest.TestCase):
                         "value": True,
                         "raw": "true"
                     },
-                    "body": {
+                    "consequent": {
                         "type": "EmptyStatement"
-                    }
+                    },
+                    "alternative": None
                 }]
             }
         )
@@ -636,11 +689,292 @@ class TestParser(unittest.TestCase):
                         "value": True,
                         "raw": "true"
                     },
-                    "body": {
+                    "consequent": {
                         "type": "EmptyStatement"
                     },
                     "alternative": {
                         "type": "EmptyStatement"
+                    }
+                }]
+            }
+        )
+
+    def test_try_statement_param(self):
+        self.assertDictEqual(
+            self.parser.parse_string("try {} catch (x) {}"), {
+                "type": "Program",
+                "body": [{
+                    "type": "TryStatement",
+                    "block": {
+                        "type": "BlockStatement",
+                        "body": []
+                    },
+                    "handler": {
+                        "type": "CatchClause",
+                        "param": {
+                            "type": "Identifier",
+                            "name": "x"
+                        },
+                        "body": {
+                            "type": "BlockStatement",
+                            "body": []
+                        }
+                    },
+                    "finalizer": None
+                }]
+            }
+        )
+
+    def test_try_statement_noparam(self):
+        self.assertDictEqual(
+            self.parser.parse_string("try {} catch {}"), {
+                "type": "Program",
+                "body": [{
+                    "type": "TryStatement",
+                    "block": {
+                        "type": "BlockStatement",
+                        "body": []
+                    },
+                    "handler": {
+                        "type": "CatchClause",
+                        "param": None,
+                        "body": {
+                            "type": "BlockStatement",
+                            "body": []
+                        }
+                    },
+                    "finalizer": None
+                }]
+            }
+        )
+
+    def test_try_statement_finalizer(self):
+        self.assertDictEqual(
+            self.parser.parse_string("try {} catch {} finally {}"), {
+                "type": "Program",
+                "body": [{
+                    "type": "TryStatement",
+                    "block": {
+                        "type": "BlockStatement",
+                        "body": []
+                    },
+                    "handler": {
+                        "type": "CatchClause",
+                        "param": None,
+                        "body": {
+                            "type": "BlockStatement",
+                            "body": []
+                        }
+                    },
+                    "finalizer": {
+                        "type": "BlockStatement",
+                        "body": []
+                    }
+                }]
+            }
+        )
+
+    def test_variable_declaration(self):
+        self.assertDictEqual(
+            self.parser.parse_string("let x = 1;"), {
+                "type": "Program",
+                "body": [{
+                    "type": "VariableDeclaration",
+                    "kind": "let",
+                    "declarations": [{
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "x"
+                        },
+                        "init": {
+                            "type": "Literal",
+                            "value": 1,
+                            "raw": "1"
+                        }
+                    }]
+                }]
+            }
+        )
+        self.assertDictEqual(
+            self.parser.parse_string("var x = 1"), {
+                "type": "Program",
+                "body": [{
+                    "type": "VariableDeclaration",
+                    "kind": "var",
+                    "declarations": [{
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "x"
+                        },
+                        "init": {
+                            "type": "Literal",
+                            "value": 1,
+                            "raw": "1"
+                        }
+                    }]
+                }]
+            }
+        )
+        self.assertDictEqual(
+            self.parser.parse_string("const x = 1"), {
+                "type": "Program",
+                "body": [{
+                    "type": "VariableDeclaration",
+                    "kind": "const",
+                    "declarations": [{
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "x"
+                        },
+                        "init": {
+                            "type": "Literal",
+                            "value": 1,
+                            "raw": "1"
+                        }
+                    }]
+                }]
+            }
+        )
+
+    def test_variable_declaration_noinit(self):
+        self.assertDictEqual(
+            self.parser.parse_string("let x"), {
+                "type": "Program",
+                "body": [{
+                    "type": "VariableDeclaration",
+                    "kind": "let",
+                    "declarations": [{
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "x"
+                        },
+                        "init": None
+                    }]
+                }]
+            }
+        )
+
+    def test_variable_declaration_list(self):
+        self.assertDictEqual(
+            self.parser.parse_string("let x = 1, y"), {
+                "type": "Program",
+                "body": [{
+                    "type": "VariableDeclaration",
+                    "kind": "let",
+                    "declarations": [
+                        {
+                            "type": "VariableDeclarator",
+                            "id": {
+                                "type": "Identifier",
+                                "name": "x"
+                            },
+                            "init": {
+                                "type": "Literal",
+                                "value": 1,
+                                "raw": "1"
+                            }
+                        },
+                        {
+                            "type": "VariableDeclarator",
+                            "id": {
+                                "type": "Identifier",
+                                "name": "y"
+                            },
+                            "init": None
+                        }
+                    ]
+                }]
+            }
+        )
+
+    def test_for_statement(self):
+        self.assertDictEqual(
+            self.parser.parse_string(("for (x;x;x) ;")), {
+                "type": "Program",
+                "body": [{
+                    "type": "ForStatement",
+                    "init": {
+                        "type": "Identifier",
+                        "name": "x"
+                    },
+                    "test": {
+                        "type": "Identifier",
+                        "name": "x"
+                    },
+                    "update": {
+                        "type": "Identifier",
+                        "name": "x"
+                    },
+                    "body": {
+                        "type": "EmptyStatement"
+                    }
+                }]
+            }
+        )
+
+    def test_for_statement_variable_declaration(self):
+        self.assertDictEqual(
+            self.parser.parse_string("for (let x;x;x) ;"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ForStatement",
+                    "init": {
+                        "type": "VariableDeclaration",
+                        "kind": "let",
+                        "declarations": [{
+                            "type": "VariableDeclarator",
+                            "id": {
+                                "type": "Identifier",
+                                "name": "x"
+                            },
+                            "init": None
+                        }]
+                    },
+                    "test": {
+                        "type": "Identifier",
+                        "name": "x"
+                    },
+                    "update": {
+                        "type": "Identifier",
+                        "name": "x"
+                    },
+                    "body": {
+                        "type": "EmptyStatement"
+                    }
+                }]
+            }
+        )
+
+    def test_for_statement_empty(self):
+        self.assertDictEqual(
+            self.parser.parse_string("for (;;) {}"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ForStatement",
+                    "init": None,
+                    "test": None,
+                    "update": None,
+                    "body": {
+                        "type": "BlockStatement",
+                        "body": []
+                    }
+                }]
+            }
+        )
+
+    def test_return_statement(self):
+        self.assertDictEqual(
+            self.parser.parse_string("return x;"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ReturnStatement",
+                    "argument": {
+                        "type": "Identifier",
+                        "name": "x"
                     }
                 }]
             }
