@@ -139,9 +139,17 @@ PowerExpression
     ;
 
 UnaryExpression
+    : UpdateExpression
+    | + UpdateExpression
+    | - UpdateExpression
+    ;
+
+UpdateExpression
     : PrimaryExpression
-    | + PrimaryExpression
-    | - PrimaryExpression
+    | ++ PrimaryExpression
+    | PrimaryExpression ++
+    | -- PrimaryExpression
+    | PrimaryExpression --
     ;
 
 PrimaryExpression
