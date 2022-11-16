@@ -38,6 +38,7 @@ TOKENS = {
     TokenKind.MOD: "%",
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
+    TokenKind.COLON: ":"
 }
 
 KEYWORDS = [
@@ -194,21 +195,27 @@ class JSParser:
         }
 
     def __if_statement(self) -> dict[str, Any]:
-        node: dict[str, Any] = {"type": "IfStatement"}
         self.__consume_keyword("if")
         self.__consume_token(TokenKind.OPEN_PAREN)
-        node["condition"] = self.__expression()
+        condition = self.__expression()
         self.__consume_token(TokenKind.CLOSE_PAREN)
-        node["body"] = self.__statement()
+        consequent = self.__statement()
 
         assert self.lookahead is not None
+
+        alternative = None
 
         if self.is_keyword(self.lookahead):
             if self.lookahead.text == "else":
                 self.__consume_keyword("else")
-                node["alternative"] = self.__statement()
+                alternative = self.__statement()
 
-        return node
+        return {
+            "type": "IfStatement",
+            "condition": condition,
+            "consequent": consequent,
+            "alternative": alternative
+        }
 
     def __try_statement(self) -> dict[str, Any]:
         self.__consume_keyword("try")
@@ -272,7 +279,7 @@ class JSParser:
         return {"type": "DoWhileStatement", "body": body, "condition": condition}
 
     def __expression_statement(self) -> dict[str, Any]:
-        node = {"type": "ExpressionStatement", "body": self.__expression()}
+        node = {"type": "ExpressionStatement", "expression": self.__expression()}
 
         assert self.lookahead is not None
 
