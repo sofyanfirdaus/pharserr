@@ -301,10 +301,11 @@ class JSParser:
         }
 
     def __variable_declarator(self, must_init: bool = False) -> dict[str, Any]:
-        full_line = self.tokenizer.full_line
-        id = self.__identifier()
-
         assert self.lookahead is not None
+
+        full_line = self.tokenizer.full_line
+        id_token = self.lookahead
+        id = self.__identifier()
 
         init = None
 
@@ -314,9 +315,9 @@ class JSParser:
                     "=",
                     TokenKind.ASSIGNMENT,
                     Location(
-                        self.lookahead.location.row,
-                        self.lookahead.location.col + 1,
-                        self.lookahead.location.file_path,
+                        id_token.location.row,
+                        id_token.location.col + 1,
+                        id_token.location.file_path,
                     ),
                 )
                 self.tokenizer.print_err("missing initializer", token, full_line)
@@ -466,13 +467,44 @@ class JSParser:
         match self.lookahead.kind:
             case TokenKind.PLUS:
                 node["operator"] = self.__consume_token(TokenKind.PLUS).text
-                node["argument"] = self.__prim_expr()
+                node["argument"] = self.__update_expr()
             case TokenKind.MINUS:
                 node["operator"] = self.__consume_token(TokenKind.MINUS).text
-                node["argument"] = self.__prim_expr()
+                node["argument"] = self.__update_expr()
             case _:
-                node = self.__prim_expr()
+                node = self.__update_expr()
 
+        return node
+
+    def __update_expr(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        ops = [TokenKind.DECR, TokenKind.INCR]
+
+        if self.lookahead.kind in ops:
+            node: dict[str, Any] = {"type": "UpdateExpression", "prefix": True}
+            node["operator"] = self.__consume_token(self.lookahead.kind).text
+            if self.lookahead.kind != TokenKind.WORD:
+                self.tokenizer.print_err(
+                    "invalid argument for increment/decrement", self.lookahead
+                )
+            node["argument"] = self.__identifier()
+        else:
+            token = self.lookahead
+            node = self.__prim_expr()
+            if self.lookahead.kind in ops:
+                argument = node
+                node = {
+                    "type": "UpdateExpression",
+                    "prefix": False,
+                    "operator": self.__consume_token(self.lookahead.kind).text,
+                }
+                if argument["type"] == "Identifier":
+                    node["argument"] = argument
+                else:
+                    self.tokenizer.print_err(
+                        "invalid argument for increment/decrement", token
+                    )
         return node
 
     def __prim_expr(self) -> dict[str, Any]:
