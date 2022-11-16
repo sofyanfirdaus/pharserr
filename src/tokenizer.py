@@ -137,16 +137,18 @@ class Tokenizer(Iterator[Token]):
         else:
             raise StopIteration()
 
-    def print_err(self, err_msg: str, token: Token | None = None):
+    def print_err(self, err_msg: str, token: Token | None = None, full_line: str | None = None):
         if token is not None:
             length = len(token.text)
             location = token.location
         else:
             length = 1
             location = self.location()
+        if full_line is None:
+            full_line = self.full_line
         print(f"{location}: ERROR: {err_msg}", file=sys.stderr)
         print("    |")
-        print(f"{location.row:>4}| " + self.full_line)
+        print(f"{location.row:>4}| " + full_line)
         print("    | {0:>{1}}".format("^" * length, location.col + length - 1))
         raise SyntaxError
 
