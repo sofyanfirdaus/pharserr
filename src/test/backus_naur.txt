@@ -17,7 +17,9 @@ Statement
     | IfStatement
     | TryStatement
     | ReturnStatement
+    | SwitchStatement
     | VariableDeclaration
+    | FunctionDeclaration
     ;
 
 EmptyStatement
@@ -44,6 +46,20 @@ ForStatement
 IfStatement
     : if ( Expression ) Statement
     | if ( Expression ) Statement else Statement
+    ;
+
+SwitchStatement
+    : switch ( Expression ) { SwitchCaseList }
+    ;
+
+SwitchCaseList
+    : SwitchCase
+    | SwitchCaseList SwitchCase
+    ;
+
+SwitchCase
+    : case Expression :
+    | default :
     ;
 
 TryStatement
@@ -78,6 +94,20 @@ VariableDeclaratorList
 VariableDeclarator
     | Identifier
     | Identifier = Expression
+    ;
+
+FunctionDeclaration
+    : function Identifier () BlockStatement
+    | function Identifier ( ParameterList ) BlockStatement
+    ;
+
+ParameterList
+    : Parameter
+    | ParameterList , Parameter
+    ;
+
+Parameter
+    : Identifier
     ;
 
 Expression
