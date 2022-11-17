@@ -38,7 +38,7 @@ TOKENS = {
     TokenKind.MOD: "%",
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
-    TokenKind.COLON: ":"
+    TokenKind.COLON: ":",
 }
 
 KEYWORDS = [
@@ -87,12 +87,12 @@ class JSParser:
             node["body"] = []
         return node
 
-    def __statement_list(self, until: TokenKind | None = None) -> list[dict[str, Any]]:
+    def __statement_list(self, until: list[TokenKind] = []) -> list[dict[str, Any]]:
         statements = [self.__statement()]
 
         assert self.lookahead is not None
 
-        while not self.tokenizer.stop and self.lookahead.kind != until:
+        while not self.tokenizer.stop and self.lookahead.kind not in until:
             statements.append(self.__statement())
 
         return statements
@@ -117,6 +117,8 @@ class JSParser:
                     return self.__return_statement()
                 case "var" | "let" | "const":
                     return self.__variable_declaration()
+                case "switch":
+                    return self.__switch_statement()
                 case _:
                     ...
 
@@ -139,7 +141,7 @@ class JSParser:
 
         node = {
             "type": "BlockStatement",
-            "body": self.__statement_list(TokenKind.CLOSE_CURLY)
+            "body": self.__statement_list([TokenKind.CLOSE_CURLY])
             if self.lookahead.kind != TokenKind.CLOSE_CURLY
             else [],
         }
@@ -214,8 +216,58 @@ class JSParser:
             "type": "IfStatement",
             "condition": condition,
             "consequent": consequent,
-            "alternative": alternative
+            "alternative": alternative,
         }
+
+    def __switch_statement(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        self.__consume_keyword("switch")
+        self.__consume_token(TokenKind.OPEN_PAREN)
+        discriminant = self.__expression()
+        self.__consume_token(TokenKind.CLOSE_PAREN)
+        self.__consume_token(TokenKind.OPEN_CURLY)
+        cases = []
+        if self.lookahead.kind != TokenKind.CLOSE_CURLY:
+            cases = self.__switchcase_list()
+        self.__consume_token(TokenKind.CLOSE_CURLY)
+
+        return {"type": "SwitchStatement", "discriminant": discriminant, "cases": cases}
+
+    def __switchcase_list(self) -> list[dict[str, Any]]:
+        switchcases = [self.__switchcase()]
+
+        assert self.lookahead is not None
+
+        while self.is_keyword(self.lookahead):
+            if self.lookahead.text in ["case", "default"]:
+                switchcases.append(self.__switchcase())
+
+        return switchcases
+
+    def __switchcase(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        test = None
+        consequent = []
+
+        stops = [TokenKind.WORD, TokenKind.CLOSE_CURLY]
+
+        match self.lookahead.text:
+            case "case":
+                self.__consume_keyword("case")
+                test = self.__expression()
+                self.__consume_token(TokenKind.COLON)
+                consequent = self.__statement_list(stops)
+            case "default":
+                self.__consume_keyword("default")
+                self.__consume_token(TokenKind.COLON)
+                consequent = self.__statement_list(stops)
+            case _:
+                self.tokenizer.print_err(
+                    f"expected `case` or `default`, but got {self.lookahead.text}"
+                )
+        return {"type": "SwitchCase", "test": test, "consequent": consequent}
 
     def __try_statement(self) -> dict[str, Any]:
         self.__consume_keyword("try")
@@ -225,6 +277,7 @@ class JSParser:
         assert self.lookahead is not None
 
         finalizer = None
+
         if self.is_keyword(self.lookahead):
             if self.lookahead.text == "finally":
                 self.__consume_keyword("finally")

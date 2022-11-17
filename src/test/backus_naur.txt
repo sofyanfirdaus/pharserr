@@ -58,8 +58,8 @@ SwitchCaseList
     ;
 
 SwitchCase
-    : case Expression :
-    | default :
+    : case Expression : StatementList
+    | default : StatementList
     ;
 
 TryStatement
