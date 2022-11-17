@@ -38,6 +38,8 @@ TOKENS = {
     TokenKind.MOD: "%",
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
+    TokenKind.COLON: ":",
+    TokenKind.QUESTION_MARK: "?"
 }
 
 KEYWORDS = [
@@ -86,12 +88,12 @@ class JSParser:
             node["body"] = []
         return node
 
-    def __statement_list(self, until: TokenKind | None = None) -> list[dict[str, Any]]:
+    def __statement_list(self, until: list[TokenKind] = []) -> list[dict[str, Any]]:
         statements = [self.__statement()]
 
         assert self.lookahead is not None
 
-        while not self.tokenizer.stop and self.lookahead.kind != until:
+        while not self.tokenizer.stop and self.lookahead.kind not in until:
             statements.append(self.__statement())
 
         return statements
@@ -116,6 +118,8 @@ class JSParser:
                     return self.__return_statement()
                 case "var" | "let" | "const":
                     return self.__variable_declaration()
+                case "switch":
+                    return self.__switch_statement()
                 case _:
                     ...
 
@@ -138,7 +142,7 @@ class JSParser:
 
         node = {
             "type": "BlockStatement",
-            "body": self.__statement_list(TokenKind.CLOSE_CURLY)
+            "body": self.__statement_list([TokenKind.CLOSE_CURLY])
             if self.lookahead.kind != TokenKind.CLOSE_CURLY
             else [],
         }
@@ -194,21 +198,77 @@ class JSParser:
         }
 
     def __if_statement(self) -> dict[str, Any]:
-        node: dict[str, Any] = {"type": "IfStatement"}
         self.__consume_keyword("if")
         self.__consume_token(TokenKind.OPEN_PAREN)
-        node["condition"] = self.__expression()
+        condition = self.__expression()
         self.__consume_token(TokenKind.CLOSE_PAREN)
-        node["body"] = self.__statement()
+        consequent = self.__statement()
 
         assert self.lookahead is not None
+
+        alternative = None
 
         if self.is_keyword(self.lookahead):
             if self.lookahead.text == "else":
                 self.__consume_keyword("else")
-                node["alternative"] = self.__statement()
+                alternative = self.__statement()
 
-        return node
+        return {
+            "type": "IfStatement",
+            "condition": condition,
+            "consequent": consequent,
+            "alternative": alternative,
+        }
+
+    def __switch_statement(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        self.__consume_keyword("switch")
+        self.__consume_token(TokenKind.OPEN_PAREN)
+        discriminant = self.__expression()
+        self.__consume_token(TokenKind.CLOSE_PAREN)
+        self.__consume_token(TokenKind.OPEN_CURLY)
+        cases = []
+        if self.lookahead.kind != TokenKind.CLOSE_CURLY:
+            cases = self.__switchcase_list()
+        self.__consume_token(TokenKind.CLOSE_CURLY)
+
+        return {"type": "SwitchStatement", "discriminant": discriminant, "cases": cases}
+
+    def __switchcase_list(self) -> list[dict[str, Any]]:
+        switchcases = [self.__switchcase()]
+
+        assert self.lookahead is not None
+
+        while self.is_keyword(self.lookahead):
+            if self.lookahead.text in ["case", "default"]:
+                switchcases.append(self.__switchcase())
+
+        return switchcases
+
+    def __switchcase(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        test = None
+        consequent = []
+
+        stops = [TokenKind.WORD, TokenKind.CLOSE_CURLY]
+
+        match self.lookahead.text:
+            case "case":
+                self.__consume_keyword("case")
+                test = self.__expression()
+                self.__consume_token(TokenKind.COLON)
+                consequent = self.__statement_list(stops)
+            case "default":
+                self.__consume_keyword("default")
+                self.__consume_token(TokenKind.COLON)
+                consequent = self.__statement_list(stops)
+            case _:
+                self.tokenizer.print_err(
+                    f"expected `case` or `default`, but got {self.lookahead.text}"
+                )
+        return {"type": "SwitchCase", "test": test, "consequent": consequent}
 
     def __try_statement(self) -> dict[str, Any]:
         self.__consume_keyword("try")
@@ -218,6 +278,7 @@ class JSParser:
         assert self.lookahead is not None
 
         finalizer = None
+
         if self.is_keyword(self.lookahead):
             if self.lookahead.text == "finally":
                 self.__consume_keyword("finally")
@@ -272,7 +333,7 @@ class JSParser:
         return {"type": "DoWhileStatement", "body": body, "condition": condition}
 
     def __expression_statement(self) -> dict[str, Any]:
-        node = {"type": "ExpressionStatement", "body": self.__expression()}
+        node = {"type": "ExpressionStatement", "expression": self.__expression()}
 
         assert self.lookahead is not None
 
@@ -330,7 +391,24 @@ class JSParser:
         return {"type": "VariableDeclarator", "id": id, "init": init}
 
     def __expression(self) -> dict[str, Any]:
-        return self.__assignment_expr()
+        return self.__conditional_expr()
+
+    def __conditional_expr(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        node = self.__assignment_expr()
+
+        while self.lookahead.kind == TokenKind.QUESTION_MARK:
+            self.__consume_token(TokenKind.QUESTION_MARK)
+            node = {
+                "type": "ConditionalExpression",
+                "test": node,
+                "consequent": self.__expression(),
+            }
+            self.__consume_token(TokenKind.COLON)
+            node["alternate"] = self.__expression()
+
+        return node
 
     def __assignment_expr(self) -> dict[str, Any]:
         left_token = self.lookahead
@@ -523,9 +601,41 @@ class JSParser:
                         node = self.__literal()
                     case _:
                         node = self.__identifier()
+            case TokenKind.OPEN_SQUARE:
+                node = self.__array_expr()
             case _:
                 node = self.__literal()
         return node
+
+    def __array_expr(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        self.__consume_token(TokenKind.OPEN_SQUARE)
+        elements = self.__array_elements() if self.lookahead.kind != TokenKind.CLOSE_SQUARE else []
+        self.__consume_token(TokenKind.CLOSE_SQUARE)
+
+        return {
+            "type": "ArrayExpression",
+            "elements": elements
+        }
+
+    def __array_elements(self) -> list[dict[str, Any] | None]:
+        assert self.lookahead is not None
+
+        if self.lookahead.kind != TokenKind.COMMA:
+            elements: list[dict[str, Any] | None] = [self.__expression()]
+        else:
+            elements = [None]
+
+        while self.lookahead.kind == TokenKind.COMMA:
+            self.__consume_token(TokenKind.COMMA)
+            if self.lookahead.kind != TokenKind.CLOSE_SQUARE:
+                if self.lookahead.kind != TokenKind.COMMA:
+                    elements.append(self.__expression())
+                else:
+                    elements.append(None)
+
+        return elements
 
     def __identifier(self) -> dict[str, Any]:
         ident = self.__consume_token(TokenKind.WORD)
