@@ -601,9 +601,41 @@ class JSParser:
                         node = self.__literal()
                     case _:
                         node = self.__identifier()
+            case TokenKind.OPEN_SQUARE:
+                node = self.__array_expr()
             case _:
                 node = self.__literal()
         return node
+
+    def __array_expr(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        self.__consume_token(TokenKind.OPEN_SQUARE)
+        elements = self.__array_elements() if self.lookahead.kind != TokenKind.CLOSE_SQUARE else []
+        self.__consume_token(TokenKind.CLOSE_SQUARE)
+
+        return {
+            "type": "ArrayExpression",
+            "elements": elements
+        }
+
+    def __array_elements(self) -> list[dict[str, Any] | None]:
+        assert self.lookahead is not None
+
+        if self.lookahead.kind != TokenKind.COMMA:
+            elements: list[dict[str, Any] | None] = [self.__expression()]
+        else:
+            elements = [None]
+
+        while self.lookahead.kind == TokenKind.COMMA:
+            self.__consume_token(TokenKind.COMMA)
+            if self.lookahead.kind != TokenKind.CLOSE_SQUARE:
+                if self.lookahead.kind != TokenKind.COMMA:
+                    elements.append(self.__expression())
+                else:
+                    elements.append(None)
+
+        return elements
 
     def __identifier(self) -> dict[str, Any]:
         ident = self.__consume_token(TokenKind.WORD)

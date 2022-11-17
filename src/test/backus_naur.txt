@@ -191,9 +191,21 @@ PrimaryExpression
     : Literal
     | Identifier
     | ParenthesizedExpression
+    | ArrayExpression
     | CallExpression
     ;
 
 ParenthesizedExpression
     : ( Expression )
+    ;
+
+ArrayExpression
+    : [ ArrayElements ]
+    ;
+
+ArrayElements
+    : ,
+    | Expression
+    | ArrayElements ,
+    | ArrayElements , Expression
     ;
