@@ -39,6 +39,7 @@ TOKENS = {
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
     TokenKind.COLON: ":",
+    TokenKind.QUESTION_MARK: "?"
 }
 
 KEYWORDS = [
@@ -390,7 +391,24 @@ class JSParser:
         return {"type": "VariableDeclarator", "id": id, "init": init}
 
     def __expression(self) -> dict[str, Any]:
-        return self.__assignment_expr()
+        return self.__conditional_expr()
+
+    def __conditional_expr(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        node = self.__assignment_expr()
+
+        while self.lookahead.kind == TokenKind.QUESTION_MARK:
+            self.__consume_token(TokenKind.QUESTION_MARK)
+            node = {
+                "type": "ConditionalExpression",
+                "test": node,
+                "consequent": self.__expression(),
+            }
+            self.__consume_token(TokenKind.COLON)
+            node["alternate"] = self.__expression()
+
+        return node
 
     def __assignment_expr(self) -> dict[str, Any]:
         left_token = self.lookahead
