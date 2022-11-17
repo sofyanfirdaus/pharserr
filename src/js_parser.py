@@ -297,7 +297,7 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if self.tokenizer.line:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {"type": "ReturnStatement", "argument": arg}
@@ -327,7 +327,7 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if self.tokenizer.line:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {"type": "DoWhileStatement", "body": body, "condition": condition}
@@ -337,7 +337,7 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if self.tokenizer.line:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return node
@@ -352,7 +352,7 @@ class JSParser:
             self.__consume_token(TokenKind.COMMA)
             declarations.append(self.__variable_declarator(kind.text == "const"))
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if self.tokenizer.line:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {
