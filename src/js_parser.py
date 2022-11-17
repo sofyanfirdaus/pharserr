@@ -72,11 +72,13 @@ KEYWORDS = [
 class JSParser:
     def parse_string(self, string: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_string(string, TOKENS)
+        self.prev_token_row = 0
         self.lookahead = self.tokenizer.peek()
         return self.__program()
 
     def parse_file(self, file_path: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_file(file_path, TOKENS)
+        self.prev_token_row = 0
         self.lookahead = self.tokenizer.peek()
         return self.__program()
 
@@ -297,7 +299,7 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if self.tokenizer.line and self.prev_token_row == self.tokenizer.row:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {"type": "ReturnStatement", "argument": arg}
@@ -337,7 +339,7 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if self.tokenizer.line and self.prev_token_row == self.tokenizer.row:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return node
@@ -352,7 +354,7 @@ class JSParser:
             self.__consume_token(TokenKind.COMMA)
             declarations.append(self.__variable_declarator(kind.text == "const"))
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if self.tokenizer.line and self.prev_token_row == self.tokenizer.row:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {
@@ -680,6 +682,7 @@ class JSParser:
     def __consume_token(self, kind: TokenKind) -> Token:
         token = self.tokenizer.expect_token(kind)
         try:
+            self.prev_token_row = self.tokenizer.row
             next_token = self.tokenizer.peek()
         except StopIteration:
             next_token = None
@@ -690,6 +693,7 @@ class JSParser:
     def __consume_keyword(self, name: str) -> Token:
         token = self.tokenizer.expect_keyword(name)
         try:
+            self.prev_token_row = self.tokenizer.row
             next_token = self.tokenizer.peek()
         except StopIteration:
             next_token = None
