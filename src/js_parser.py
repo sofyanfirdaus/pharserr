@@ -39,7 +39,7 @@ TOKENS = {
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
     TokenKind.COLON: ":",
-    TokenKind.QUESTION_MARK: "?"
+    TokenKind.QUESTION_MARK: "?",
 }
 
 KEYWORDS = [
@@ -142,6 +142,8 @@ class JSParser:
 
         assert self.lookahead is not None
 
+        self.__check_eof("Unexpected token")
+
         node = {
             "type": "BlockStatement",
             "body": self.__statement_list([TokenKind.CLOSE_CURLY])
@@ -166,6 +168,8 @@ class JSParser:
         self.__consume_token(TokenKind.OPEN_PAREN)
 
         assert self.lookahead is not None
+
+        self.__check_eof("Unexpected token")
 
         init = test = update = None
 
@@ -242,6 +246,8 @@ class JSParser:
 
         assert self.lookahead is not None
 
+        self.__check_eof("Unexpected token")
+
         while self.is_keyword(self.lookahead):
             if self.lookahead.text in ["case", "default"]:
                 switchcases.append(self.__switchcase())
@@ -250,6 +256,8 @@ class JSParser:
 
     def __switchcase(self) -> dict[str, Any]:
         assert self.lookahead is not None
+
+        self.__check_eof("Unexpected token")
 
         test = None
         consequent = []
@@ -299,7 +307,9 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if self.tokenizer.line and self.prev_token_row == self.tokenizer.row:
+        if (
+            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+        ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {"type": "ReturnStatement", "argument": arg}
@@ -339,7 +349,9 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if self.tokenizer.line and self.prev_token_row == self.tokenizer.row:
+        if (
+            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+        ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return node
@@ -354,7 +366,9 @@ class JSParser:
             self.__consume_token(TokenKind.COMMA)
             declarations.append(self.__variable_declarator(kind.text == "const"))
 
-        if self.tokenizer.line and self.prev_token_row == self.tokenizer.row:
+        if (
+            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+        ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {
@@ -365,6 +379,8 @@ class JSParser:
 
     def __variable_declarator(self, must_init: bool = False) -> dict[str, Any]:
         assert self.lookahead is not None
+
+        self.__check_eof("Unexpected token")
 
         full_line = self.tokenizer.full_line
         id_token = self.lookahead
@@ -393,6 +409,7 @@ class JSParser:
         return {"type": "VariableDeclarator", "id": id, "init": init}
 
     def __expression(self) -> dict[str, Any]:
+        self.__check_eof("Expression expected")
         return self.__conditional_expr()
 
     def __conditional_expr(self) -> dict[str, Any]:
@@ -613,13 +630,14 @@ class JSParser:
         assert self.lookahead is not None
 
         self.__consume_token(TokenKind.OPEN_SQUARE)
-        elements = self.__array_elements() if self.lookahead.kind != TokenKind.CLOSE_SQUARE else []
+        elements = (
+            self.__array_elements()
+            if self.lookahead.kind != TokenKind.CLOSE_SQUARE
+            else []
+        )
         self.__consume_token(TokenKind.CLOSE_SQUARE)
 
-        return {
-            "type": "ArrayExpression",
-            "elements": elements
-        }
+        return {"type": "ArrayExpression", "elements": elements}
 
     def __array_elements(self) -> list[dict[str, Any] | None]:
         assert self.lookahead is not None
@@ -666,8 +684,8 @@ class JSParser:
                     else False,
                     "raw": token.text,
                 }
-            case _ as text:
-                raise AssertionError(f"unreachable: {text}")
+            case _:
+                self.tokenizer.print_err("Unexpected token", self.lookahead)
 
     def __numeric_literal(self) -> dict[str, Any]:
         token = self.__consume_token(TokenKind.NUMBER_LIT)
@@ -700,6 +718,10 @@ class JSParser:
         if next_token is not None:
             self.lookahead = next_token
         return token
+
+    def __check_eof(self, msg: str) -> None:
+        if self.tokenizer.stop:
+            self.tokenizer.print_err(msg)
 
     def is_keyword(self, token: Token) -> bool:
         return token.text in KEYWORDS

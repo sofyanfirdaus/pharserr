@@ -118,12 +118,12 @@ class Tokenizer(Iterator[Token]):
                         f"Expected {err_msg}, but got `{token.text}`", token)
                 else:
                     self.print_err(
-                        f"Expected `{self.token_pairs[kind]}, but got `{token.text}`",
+                        f"Expected `{self.token_pairs[kind]}`, but got `{token.text}`",
                         token)
             return token
         except StopIteration:
             self.print_err(
-                f"Expected `{self.token_pairs[kind]}, but reached end of file")
+                f"Expected `{self.token_pairs[kind]}`, but got nothing")
 
     def expect_keyword(self, name: str):
         token = self.expect_token(TokenKind.WORD, "keyword")
@@ -152,7 +152,7 @@ class Tokenizer(Iterator[Token]):
         print("    |")
         print(f"{location.row:>4}| " + full_line)
         print("    | {0:>{1}}".format("^" * length, location.col + length - 1))
-        raise SyntaxError
+        raise SyntaxError(err_msg)
 
     def peek(self) -> Token | None:
         if self.peek_token is not None:
