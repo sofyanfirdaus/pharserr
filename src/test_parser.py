@@ -980,6 +980,115 @@ class TestParser(unittest.TestCase):
             }
         )
 
+    def test_switch_statement_empty(self):
+        self.assertDictEqual(
+            self.parser.parse_string("switch (x) {}"), {
+                "type": "Program",
+                "body": [{
+                    "type": "SwitchStatement",
+                    "discriminant": {
+                        "type": "Identifier",
+                        "name": "x"
+                    },
+                    "cases": []
+                }]
+            }
+        )
+
+    def test_switch_statement_case(self):
+        self.assertDictEqual(
+            self.parser.parse_string("switch (x) {case y: z}"), {
+                "type": "Program",
+                "body": [{
+                    "type": "SwitchStatement",
+                    "discriminant": {
+                        "type": "Identifier",
+                        "name": "x"
+                    },
+                    "cases": [{
+                        "type": "SwitchCase",
+                        "test": {
+                            "type": "Identifier",
+                            "name": "y"
+                        },
+                        "consequent": [{
+                            "type": "ExpressionStatement",
+                            "expression": {
+                                "type": "Identifier",
+                                "name": "z"
+                            }
+                        }]
+                    }]
+                }]
+            }
+        )
+
+    def test_switch_statement_default(self):
+        self.assertDictEqual(
+            self.parser.parse_string("switch (x) {default: z}"), {
+                "type": "Program",
+                "body": [{
+                    "type": "SwitchStatement",
+                    "discriminant": {
+                        "type": "Identifier",
+                        "name": "x"
+                    },
+                    "cases": [{
+                        "type": "SwitchCase",
+                        "test": None,
+                        "consequent": [{
+                            "type": "ExpressionStatement",
+                            "expression": {
+                                "type": "Identifier",
+                                "name": "z"
+                            }
+                        }]
+                    }]
+                }]
+            }
+        )
+
+    def test_switch_statement_case_list(self):
+        self.assertDictEqual(
+            self.parser.parse_string("switch (x) {case y: z; default: w}"), {
+                "type": "Program",
+                "body": [{
+                    "type": "SwitchStatement",
+                    "discriminant": {
+                        "type": "Identifier",
+                        "name": "x"
+                    },
+                    "cases": [
+                        {
+                            "type": "SwitchCase",
+                            "test": {
+                                "type": "Identifier",
+                                "name": "y"
+                            },
+                            "consequent": [{
+                                "type": "ExpressionStatement",
+                                "expression": {
+                                    "type": "Identifier",
+                                    "name": "z"
+                                }
+                            }]
+                        },
+                        {
+                            "type": "SwitchCase",
+                            "test": None,
+                            "consequent": [{
+                                "type": "ExpressionStatement",
+                                "expression": {
+                                    "type": "Identifier",
+                                    "name": "w"
+                                }
+                            }]
+                        }
+                    ]
+                }]
+            }
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
