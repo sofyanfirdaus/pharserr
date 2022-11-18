@@ -21,6 +21,7 @@ Statement
     | LabeledStatement
     | ThrowStatement
     | BreakStatement
+    | ContinueStatement
     | VariableDeclaration
     | FunctionDeclaration
     ;
@@ -85,6 +86,13 @@ BreakStatement
     | break ;
     | break Identifier
     | break Identifier ;
+    ;
+
+ContinueStatement
+    : continue
+    | continue ;
+    | continue Identifier
+    | continue Identifier ;
     ;
 
 ExpressionStatement

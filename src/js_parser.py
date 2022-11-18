@@ -76,6 +76,7 @@ class JSParser:
         self.__loop_count = 0
         self.__switch_count = 0
         self.__labels = set()
+        self.__loop_labels = set()
 
     def parse_string(self, string: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_string(string, TOKENS)
@@ -131,6 +132,8 @@ class JSParser:
                     return self.__throw_statement()
                 case "break":
                     return self.__break_statement()
+                case "continue":
+                    return self.__continue_statement()
                 case _:
                     ...
 
@@ -371,6 +374,33 @@ class JSParser:
 
         return {"type": "BreakStatement", "label": label}
 
+    def __continue_statement(self) -> dict[str, Any]:
+        full_line = self.tokenizer.full_line
+        token = self.__consume_keyword("continue")
+
+        assert self.lookahead is not None
+
+        label = None
+        if (
+            not self.tokenizer.stop
+            and self.tokenizer.row == self.__prev_token_row
+            and self.lookahead.kind == TokenKind.WORD
+        ):
+            token_label = self.lookahead
+            label = self.__identifier()
+            if (name := label["name"]) not in self.__loop_labels:
+                self.tokenizer.print_err(f"No loop label named `{name}`", token_label, full_line)
+
+        if (
+            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
+        ) or self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token(TokenKind.SEMICOLON)
+
+        if label is None and self.__loop_count < 1:
+            self.tokenizer.print_err("Unsyntactic continue statement", token, full_line)
+
+        return {"type": "ContinueStatement", "label": label}
+
     def __catch_clause(self) -> dict[str, Any] | None:
         assert self.lookahead is not None
 
@@ -410,9 +440,13 @@ class JSParser:
 
         self.__consume_token(TokenKind.COLON)
 
+        if self.lookahead.text in ["while", "for", "do"]:
+            self.__loop_labels.add(label["name"])
+
         body = self.__statement()
 
         self.__labels.remove(label["name"])
+        self.__loop_labels.discard(label["name"])
 
         return {"type": "LabeledStatement", "label": label, "body": body}
 
