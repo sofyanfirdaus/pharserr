@@ -1,4 +1,5 @@
 import os
+import sys
 from pprint import pprint as print
 from typing import Any
 
@@ -39,7 +40,7 @@ TOKENS = {
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
     TokenKind.COLON: ":",
-    TokenKind.QUESTION_MARK: "?"
+    TokenKind.QUESTION_MARK: "?",
 }
 
 KEYWORDS = [
@@ -72,11 +73,13 @@ KEYWORDS = [
 class JSParser:
     def parse_string(self, string: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_string(string, TOKENS)
+        self.prev_token_row = 0
         self.lookahead = self.tokenizer.peek()
         return self.__program()
 
     def parse_file(self, file_path: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_file(file_path, TOKENS)
+        self.prev_token_row = 0
         self.lookahead = self.tokenizer.peek()
         return self.__program()
 
@@ -140,6 +143,8 @@ class JSParser:
 
         assert self.lookahead is not None
 
+        self.__check_eof("Unexpected token")
+
         node = {
             "type": "BlockStatement",
             "body": self.__statement_list([TokenKind.CLOSE_CURLY])
@@ -164,6 +169,8 @@ class JSParser:
         self.__consume_token(TokenKind.OPEN_PAREN)
 
         assert self.lookahead is not None
+
+        self.__check_eof("Unexpected token")
 
         init = test = update = None
 
@@ -206,18 +213,18 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        alternative = None
+        alternate = None
 
         if self.is_keyword(self.lookahead):
             if self.lookahead.text == "else":
                 self.__consume_keyword("else")
-                alternative = self.__statement()
+                alternate = self.__statement()
 
         return {
             "type": "IfStatement",
             "condition": condition,
             "consequent": consequent,
-            "alternative": alternative,
+            "alternate": alternate,
         }
 
     def __switch_statement(self) -> dict[str, Any]:
@@ -240,6 +247,8 @@ class JSParser:
 
         assert self.lookahead is not None
 
+        self.__check_eof("Unexpected token")
+
         while self.is_keyword(self.lookahead):
             if self.lookahead.text in ["case", "default"]:
                 switchcases.append(self.__switchcase())
@@ -248,6 +257,8 @@ class JSParser:
 
     def __switchcase(self) -> dict[str, Any]:
         assert self.lookahead is not None
+
+        self.__check_eof("Unexpected token")
 
         test = None
         consequent = []
@@ -297,7 +308,9 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if (
+            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+        ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {"type": "ReturnStatement", "argument": arg}
@@ -337,7 +350,9 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if (
+            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+        ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return node
@@ -352,7 +367,9 @@ class JSParser:
             self.__consume_token(TokenKind.COMMA)
             declarations.append(self.__variable_declarator(kind.text == "const"))
 
-        if self.lookahead.kind == TokenKind.SEMICOLON:
+        if (
+            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+        ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {
@@ -363,6 +380,8 @@ class JSParser:
 
     def __variable_declarator(self, must_init: bool = False) -> dict[str, Any]:
         assert self.lookahead is not None
+
+        self.__check_eof("Unexpected token")
 
         full_line = self.tokenizer.full_line
         id_token = self.lookahead
@@ -391,6 +410,7 @@ class JSParser:
         return {"type": "VariableDeclarator", "id": id, "init": init}
 
     def __expression(self) -> dict[str, Any]:
+        self.__check_eof("Expression expected")
         return self.__conditional_expr()
 
     def __conditional_expr(self) -> dict[str, Any]:
@@ -611,13 +631,14 @@ class JSParser:
         assert self.lookahead is not None
 
         self.__consume_token(TokenKind.OPEN_SQUARE)
-        elements = self.__array_elements() if self.lookahead.kind != TokenKind.CLOSE_SQUARE else []
+        elements = (
+            self.__array_elements()
+            if self.lookahead.kind != TokenKind.CLOSE_SQUARE
+            else []
+        )
         self.__consume_token(TokenKind.CLOSE_SQUARE)
 
-        return {
-            "type": "ArrayExpression",
-            "elements": elements
-        }
+        return {"type": "ArrayExpression", "elements": elements}
 
     def __array_elements(self) -> list[dict[str, Any] | None]:
         assert self.lookahead is not None
@@ -664,8 +685,8 @@ class JSParser:
                     else False,
                     "raw": token.text,
                 }
-            case _ as text:
-                raise AssertionError(f"unreachable: {text}")
+            case _:
+                self.tokenizer.print_err("Unexpected token", self.lookahead)
 
     def __numeric_literal(self) -> dict[str, Any]:
         token = self.__consume_token(TokenKind.NUMBER_LIT)
@@ -680,6 +701,7 @@ class JSParser:
     def __consume_token(self, kind: TokenKind) -> Token:
         token = self.tokenizer.expect_token(kind)
         try:
+            self.prev_token_row = self.tokenizer.row
             next_token = self.tokenizer.peek()
         except StopIteration:
             next_token = None
@@ -690,6 +712,7 @@ class JSParser:
     def __consume_keyword(self, name: str) -> Token:
         token = self.tokenizer.expect_keyword(name)
         try:
+            self.prev_token_row = self.tokenizer.row
             next_token = self.tokenizer.peek()
         except StopIteration:
             next_token = None
@@ -697,13 +720,18 @@ class JSParser:
             self.lookahead = next_token
         return token
 
+    def __check_eof(self, msg: str) -> None:
+        if self.tokenizer.stop:
+            self.tokenizer.print_err(msg)
+
     def is_keyword(self, token: Token) -> bool:
         return token.text in KEYWORDS
 
 
 parser = JSParser()
 
-print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/simple.js"))
+# print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/inputAcc.js"))
+print(parser.parse_file(os.path.abspath(sys.argv[1])))
 
 # for token in (tokenizer := Tokenizer.from_file("test/inputAcc.js", TOKENS)):
 #     if token.kind == TokenKind.WORD and token.text == "if":
