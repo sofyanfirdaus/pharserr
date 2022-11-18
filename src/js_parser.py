@@ -728,10 +728,11 @@ class JSParser:
         return token.text in KEYWORDS
 
 
-parser = JSParser()
+if __name__ == "__main__":
+    parser = JSParser()
 
-# print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/inputAcc.js"))
-print(parser.parse_file(os.path.abspath(sys.argv[1])))
+    # print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/inputAcc.js"))
+    print(parser.parse_file(os.path.abspath(sys.argv[1])))
 
 # for token in (tokenizer := Tokenizer.from_file("test/inputAcc.js", TOKENS)):
 #     if token.kind == TokenKind.WORD and token.text == "if":
