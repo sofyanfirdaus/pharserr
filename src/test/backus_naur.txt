@@ -20,6 +20,7 @@ Statement
     | SwitchStatement
     | LabeledStatement
     | ThrowStatement
+    | BreakStatement
     | VariableDeclaration
     | FunctionDeclaration
     ;
@@ -77,6 +78,13 @@ ReturnStatement
 ThrowStatement
     : throw Expression
     | throw Expression ;
+    ;
+
+BreakStatement
+    : break
+    | break ;
+    | break Identifier
+    | break Identifier ;
     ;
 
 ExpressionStatement
