@@ -19,6 +19,7 @@ Statement
     | ReturnStatement
     | SwitchStatement
     | LabeledStatement
+    | ThrowStatement
     | VariableDeclaration
     | FunctionDeclaration
     ;
@@ -71,6 +72,11 @@ TryStatement
 ReturnStatement
     : return Expression
     | return Expression ;
+    ;
+
+ThrowStatement
+    : throw Expression
+    | throw Expression ;
     ;
 
 ExpressionStatement

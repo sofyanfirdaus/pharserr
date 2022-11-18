@@ -123,6 +123,8 @@ class JSParser:
                     return self.__variable_declaration()
                 case "switch":
                     return self.__switch_statement()
+                case "throw":
+                    return self.__throw_statement()
                 case _:
                     ...
 
@@ -314,6 +316,19 @@ class JSParser:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {"type": "ReturnStatement", "argument": arg}
+
+    def __throw_statement(self) -> dict[str, Any]:
+        self.__consume_keyword("throw")
+        arg = self.__expression()
+
+        assert self.lookahead is not None
+
+        if (
+            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+        ) or self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token(TokenKind.SEMICOLON)
+
+        return {"type": "ThrowStatement", "argument": arg}
 
     def __catch_clause(self) -> dict[str, Any] | None:
         assert self.lookahead is not None
