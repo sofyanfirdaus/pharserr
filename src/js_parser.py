@@ -1,4 +1,5 @@
 import os
+import sys
 from pprint import pprint as print
 from typing import Any
 
@@ -212,18 +213,18 @@ class JSParser:
 
         assert self.lookahead is not None
 
-        alternative = None
+        alternate = None
 
         if self.is_keyword(self.lookahead):
             if self.lookahead.text == "else":
                 self.__consume_keyword("else")
-                alternative = self.__statement()
+                alternate = self.__statement()
 
         return {
             "type": "IfStatement",
             "condition": condition,
             "consequent": consequent,
-            "alternative": alternative,
+            "alternate": alternate,
         }
 
     def __switch_statement(self) -> dict[str, Any]:
@@ -729,7 +730,8 @@ class JSParser:
 
 parser = JSParser()
 
-print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/simple.js"))
+# print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/inputAcc.js"))
+print(parser.parse_file(os.path.abspath(sys.argv[1])))
 
 # for token in (tokenizer := Tokenizer.from_file("test/inputAcc.js", TOKENS)):
 #     if token.kind == TokenKind.WORD and token.text == "if":

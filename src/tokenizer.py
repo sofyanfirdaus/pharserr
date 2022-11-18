@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from enum import Enum, auto
 import sys
 
+sys.tracebacklimit = 0
+
 
 class TokenKind(Enum):
     """ Some generic tokens enumeration """
