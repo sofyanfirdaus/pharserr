@@ -345,10 +345,24 @@ class JSParser:
 
         return {"type": "DoWhileStatement", "body": body, "condition": condition}
 
+    def __labeled_statement(self, label: dict[str, Any]) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        self.__consume_token(TokenKind.COLON)
+
+        return {
+            "type": "LabeledStatement",
+            "label": label,
+            "body": self.__statement()
+        }
+
     def __expression_statement(self) -> dict[str, Any]:
         node = {"type": "ExpressionStatement", "expression": self.__expression()}
 
         assert self.lookahead is not None
+
+        if node["expression"]["type"] == "Identifier" and self.lookahead.kind == TokenKind.COLON:
+            return self.__labeled_statement(node["expression"])
 
         if (
             self.tokenizer.line and self.prev_token_row == self.tokenizer.row

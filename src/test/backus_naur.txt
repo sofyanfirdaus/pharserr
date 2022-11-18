@@ -18,6 +18,7 @@ Statement
     | TryStatement
     | ReturnStatement
     | SwitchStatement
+    | LabeledStatement
     | VariableDeclaration
     | FunctionDeclaration
     ;
@@ -73,8 +74,13 @@ ReturnStatement
     ;
 
 ExpressionStatement
-    : Expression
+    : LabeledStatement
+    | Expression
     | Expression ;
+    ;
+
+LabeledStatement
+    | Identifier : Statement
     ;
 
 VariableDeclaration
