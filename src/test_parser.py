@@ -673,7 +673,7 @@ class TestParser(unittest.TestCase):
                     "consequent": {
                         "type": "EmptyStatement"
                     },
-                    "alternative": None
+                    "alternate": None
                 }]
             }
         )
@@ -692,7 +692,7 @@ class TestParser(unittest.TestCase):
                     "consequent": {
                         "type": "EmptyStatement"
                     },
-                    "alternative": {
+                    "alternate": {
                         "type": "EmptyStatement"
                     }
                 }]
