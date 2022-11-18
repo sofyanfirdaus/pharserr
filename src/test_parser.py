@@ -1089,6 +1089,105 @@ class TestParser(unittest.TestCase):
             }
         )
 
+    def test_unary_expression(self):
+        self.assertDictEqual(
+            self.parser.parse_string("+3"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "expression": {
+                        "type": "UnaryOperator",
+                        "operator": "+",
+                        "argument": {
+                            "raw": "3",
+                            "type": "Literal",
+                            "value": 3
+                        }
+                    }
+                }]
+            }
+        )
+        self.assertDictEqual(
+            self.parser.parse_string("-3"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "expression": {
+                        "type": "UnaryOperator",
+                        "operator": "-",
+                        "argument": {
+                            "raw": "3",
+                            "type": "Literal",
+                            "value": 3
+                        }
+                    }
+                }]
+            }
+        )
+        self.assertIsInstance(
+            self.parser.parse_string("+3;-3"),
+            dict
+        )
+
+    def test_labeled_statement(self):
+        self.assertDictEqual(
+            self.parser.parse_string("label: {}"), {
+                "type":  "Program",
+                "body": [{
+                    "type": "LabeledStatement",
+                    "body": {
+                        "type": "BlockStatement",
+                        "body": []
+                    },
+                    "label": {
+                        "type": "Identifier",
+                        "name": "label"
+                    }
+                }]
+            }
+        )
+        self.assertDictEqual(
+            self.parser.parse_string("label: ;"), {
+                "type":  "Program",
+                "body": [{
+                    "type": "LabeledStatement",
+                    "body": {
+                        "type": "EmptyStatement"
+                    },
+                    "label": {
+                        "type": "Identifier",
+                        "name": "label"
+                    }
+                }]
+            }
+        )
+
+    def test_throw_statement(self):
+        self.assertDictEqual(
+            self.parser.parse_string("throw x"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ThrowStatement",
+                    "argument": {
+                        "type": "Identifier",
+                        "name": "x"
+                    }
+                }]
+            }
+        )
+        self.assertDictEqual(
+            self.parser.parse_string("throw 1"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ThrowStatement",
+                    "argument": {
+                        "type": "Literal",
+                        "value": 1,
+                        "raw": "1"
+                    }
+                }]
+            }
+        )
 
 if __name__ == '__main__':
     unittest.main()
