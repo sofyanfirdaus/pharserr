@@ -1129,7 +1129,65 @@ class TestParser(unittest.TestCase):
             dict
         )
 
+    def test_labeled_statement(self):
+        self.assertDictEqual(
+            self.parser.parse_string("label: {}"), {
+                "type":  "Program",
+                "body": [{
+                    "type": "LabeledStatement",
+                    "body": {
+                        "type": "BlockStatement",
+                        "body": []
+                    },
+                    "label": {
+                        "type": "Identifier",
+                        "name": "label"
+                    }
+                }]
+            }
+        )
+        self.assertDictEqual(
+            self.parser.parse_string("label: ;"), {
+                "type":  "Program",
+                "body": [{
+                    "type": "LabeledStatement",
+                    "body": {
+                        "type": "EmptyStatement"
+                    },
+                    "label": {
+                        "type": "Identifier",
+                        "name": "label"
+                    }
+                }]
+            }
+        )
 
+    def test_throw_statement(self):
+        self.assertDictEqual(
+            self.parser.parse_string("throw x"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ThrowStatement",
+                    "argument": {
+                        "type": "Identifier",
+                        "name": "x"
+                    }
+                }]
+            }
+        )
+        self.assertDictEqual(
+            self.parser.parse_string("throw 1"), {
+                "type": "Program",
+                "body": [{
+                    "type": "ThrowStatement",
+                    "argument": {
+                        "type": "Literal",
+                        "value": 1,
+                        "raw": "1"
+                    }
+                }]
+            }
+        )
 
 if __name__ == '__main__':
     unittest.main()

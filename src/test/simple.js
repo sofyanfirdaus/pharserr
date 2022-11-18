@@ -35,4 +35,6 @@
 // do;
 // while (x)
 
-+3
+// label: { }
+throw 1
+
