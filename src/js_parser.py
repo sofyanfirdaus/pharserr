@@ -345,10 +345,24 @@ class JSParser:
 
         return {"type": "DoWhileStatement", "body": body, "condition": condition}
 
+    def __labeled_statement(self, label: dict[str, Any]) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        self.__consume_token(TokenKind.COLON)
+
+        return {
+            "type": "LabeledStatement",
+            "label": label,
+            "body": self.__statement()
+        }
+
     def __expression_statement(self) -> dict[str, Any]:
         node = {"type": "ExpressionStatement", "expression": self.__expression()}
 
         assert self.lookahead is not None
+
+        if node["expression"]["type"] == "Identifier" and self.lookahead.kind == TokenKind.COLON:
+            return self.__labeled_statement(node["expression"])
 
         if (
             self.tokenizer.line and self.prev_token_row == self.tokenizer.row
@@ -728,10 +742,11 @@ class JSParser:
         return token.text in KEYWORDS
 
 
-parser = JSParser()
+if __name__ == '__main__':
+    parser = JSParser()
 
 # print(parser.parse_file(os.path.dirname(os.path.abspath(__file__)) + "/test/inputAcc.js"))
-print(parser.parse_file(os.path.abspath(sys.argv[1])))
+    print(parser.parse_file(os.path.abspath(sys.argv[1])))
 
 # for token in (tokenizer := Tokenizer.from_file("test/inputAcc.js", TOKENS)):
 #     if token.kind == TokenKind.WORD and token.text == "if":
