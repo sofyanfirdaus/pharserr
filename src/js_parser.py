@@ -71,15 +71,19 @@ KEYWORDS = [
 
 
 class JSParser:
+    def __init__(self):
+        self.__prev_token_row = 0
+        self.__loop_count = 0
+        self.__switch_count = 0
+        self.__labels = set()
+
     def parse_string(self, string: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_string(string, TOKENS)
-        self.prev_token_row = 0
         self.lookahead = self.tokenizer.peek()
         return self.__program()
 
     def parse_file(self, file_path: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_file(file_path, TOKENS)
-        self.prev_token_row = 0
         self.lookahead = self.tokenizer.peek()
         return self.__program()
 
@@ -91,12 +95,12 @@ class JSParser:
             node["body"] = []
         return node
 
-    def __statement_list(self, until: list[TokenKind] = []) -> list[dict[str, Any]]:
+    def __statement_list(self, until: list[str] = []) -> list[dict[str, Any]]:
         statements = [self.__statement()]
 
         assert self.lookahead is not None
 
-        while not self.tokenizer.stop and self.lookahead.kind not in until:
+        while not self.tokenizer.stop and self.lookahead.text not in until:
             statements.append(self.__statement())
 
         return statements
@@ -125,6 +129,8 @@ class JSParser:
                     return self.__switch_statement()
                 case "throw":
                     return self.__throw_statement()
+                case "break":
+                    return self.__break_statement()
                 case _:
                     ...
 
@@ -149,7 +155,7 @@ class JSParser:
 
         node = {
             "type": "BlockStatement",
-            "body": self.__statement_list([TokenKind.CLOSE_CURLY])
+            "body": self.__statement_list(['}'])
             if self.lookahead.kind != TokenKind.CLOSE_CURLY
             else [],
         }
@@ -158,15 +164,18 @@ class JSParser:
         return node
 
     def __while_statement(self) -> dict[str, Any]:
+        self.__loop_count += 1
         self.__consume_keyword("while")
         self.__consume_token(TokenKind.OPEN_PAREN)
         condition = self.__expression()
         self.__consume_token(TokenKind.CLOSE_PAREN)
         body = self.__statement()
+        self.__loop_count -= 1
 
         return {"type": "WhileStatement", "condition": condition, "body": body}
 
     def __for_statement(self) -> dict[str, Any]:
+        self.__loop_count += 1
         self.__consume_keyword("for")
         self.__consume_token(TokenKind.OPEN_PAREN)
 
@@ -195,8 +204,8 @@ class JSParser:
             update = self.__expression()
 
         self.__consume_token(TokenKind.CLOSE_PAREN)
-
         body = self.__statement()
+        self.__loop_count -= 1
 
         return {
             "type": "ForStatement",
@@ -232,6 +241,8 @@ class JSParser:
     def __switch_statement(self) -> dict[str, Any]:
         assert self.lookahead is not None
 
+        self.__switch_count += 1
+
         self.__consume_keyword("switch")
         self.__consume_token(TokenKind.OPEN_PAREN)
         discriminant = self.__expression()
@@ -241,6 +252,8 @@ class JSParser:
         if self.lookahead.kind != TokenKind.CLOSE_CURLY:
             cases = self.__switchcase_list()
         self.__consume_token(TokenKind.CLOSE_CURLY)
+
+        self.__switch_count -= 1
 
         return {"type": "SwitchStatement", "discriminant": discriminant, "cases": cases}
 
@@ -265,7 +278,7 @@ class JSParser:
         test = None
         consequent = []
 
-        stops = [TokenKind.WORD, TokenKind.CLOSE_CURLY]
+        stops = ["case", "default", "}"]
 
         match self.lookahead.text:
             case "case":
@@ -279,7 +292,8 @@ class JSParser:
                 consequent = self.__statement_list(stops)
             case _:
                 self.tokenizer.print_err(
-                    f"expected `case` or `default`, but got {self.lookahead.text}"
+                    f"expected `case` or `default`, but got {self.lookahead.text}",
+                    self.lookahead
                 )
         return {"type": "SwitchCase", "test": test, "consequent": consequent}
 
@@ -311,7 +325,7 @@ class JSParser:
         assert self.lookahead is not None
 
         if (
-            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
         ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
@@ -324,11 +338,38 @@ class JSParser:
         assert self.lookahead is not None
 
         if (
-            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
         ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {"type": "ThrowStatement", "argument": arg}
+
+    def __break_statement(self) -> dict[str, Any]:
+        full_line = self.tokenizer.full_line
+        token = self.__consume_keyword("break")
+
+        assert self.lookahead is not None
+
+        label = None
+        if (
+            not self.tokenizer.stop
+            and self.tokenizer.row == self.__prev_token_row
+            and self.lookahead.kind == TokenKind.WORD
+        ):
+            token_label = self.lookahead
+            label = self.__identifier()
+            if (name := label["name"]) not in self.__labels:
+                self.tokenizer.print_err(f"No label named `{name}`", token_label, full_line)
+
+        if (
+            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
+        ) or self.lookahead.kind == TokenKind.SEMICOLON:
+            self.__consume_token(TokenKind.SEMICOLON)
+
+        if label is None and self.__loop_count < 1 and self.__switch_count < 1:
+            self.tokenizer.print_err("Unsyntactic break statement", token, full_line)
+
+        return {"type": "BreakStatement", "label": label}
 
     def __catch_clause(self) -> dict[str, Any] | None:
         assert self.lookahead is not None
@@ -346,8 +387,10 @@ class JSParser:
         return {"type": "CatchClause", "param": param, "body": body}
 
     def __dowhile_statement(self) -> dict[str, Any]:
+        self.__loop_count += 1
         self.__consume_keyword("do")
         body = self.__statement()
+        self.__loop_count -= 1
         self.__consume_keyword("while")
         self.__consume_token(TokenKind.OPEN_PAREN)
         condition = self.__expression()
@@ -363,24 +406,29 @@ class JSParser:
     def __labeled_statement(self, label: dict[str, Any]) -> dict[str, Any]:
         assert self.lookahead is not None
 
+        self.__labels.add(label["name"])
+
         self.__consume_token(TokenKind.COLON)
 
-        return {
-            "type": "LabeledStatement",
-            "label": label,
-            "body": self.__statement()
-        }
+        body = self.__statement()
+
+        self.__labels.remove(label["name"])
+
+        return {"type": "LabeledStatement", "label": label, "body": body}
 
     def __expression_statement(self) -> dict[str, Any]:
         node = {"type": "ExpressionStatement", "expression": self.__expression()}
 
         assert self.lookahead is not None
 
-        if node["expression"]["type"] == "Identifier" and self.lookahead.kind == TokenKind.COLON:
+        if (
+            node["expression"]["type"] == "Identifier"
+            and self.lookahead.kind == TokenKind.COLON
+        ):
             return self.__labeled_statement(node["expression"])
 
         if (
-            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
         ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
@@ -397,7 +445,7 @@ class JSParser:
             declarations.append(self.__variable_declarator(kind.text == "const"))
 
         if (
-            self.tokenizer.line and self.prev_token_row == self.tokenizer.row
+            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
         ) or self.lookahead.kind == TokenKind.SEMICOLON:
             self.__consume_token(TokenKind.SEMICOLON)
 
@@ -730,7 +778,7 @@ class JSParser:
     def __consume_token(self, kind: TokenKind) -> Token:
         token = self.tokenizer.expect_token(kind)
         try:
-            self.prev_token_row = self.tokenizer.row
+            self.__prev_token_row = self.tokenizer.row
             next_token = self.tokenizer.peek()
         except StopIteration:
             next_token = None
@@ -741,7 +789,7 @@ class JSParser:
     def __consume_keyword(self, name: str) -> Token:
         token = self.tokenizer.expect_keyword(name)
         try:
-            self.prev_token_row = self.tokenizer.row
+            self.__prev_token_row = self.tokenizer.row
             next_token = self.tokenizer.peek()
         except StopIteration:
             next_token = None
