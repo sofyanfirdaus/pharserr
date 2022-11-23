@@ -120,7 +120,7 @@ VariableDeclaratorList
     ;
 
 VariableDeclarator
-    | Identifier
+    : Identifier
     | Identifier = Expression
     ;
 
@@ -136,6 +136,7 @@ ParameterList
 
 Parameter
     : Identifier
+    | AssignmentExpression
     ;
 
 Expression
@@ -143,7 +144,7 @@ Expression
     ;
 
 ConditionalExpression
-    | AssignmentExpression
+    : AssignmentExpression
     | Expression ? Expression : Expression
     ;
 
@@ -208,11 +209,17 @@ UnaryExpression
     ;
 
 UpdateExpression
+    : MemberExpression
+    | ++ MemberExpression
+    | MemberExpression ++
+    | -- MemberExpression
+    | MemberExpression --
+    ;
+
+MemberExpression
     : PrimaryExpression
-    | ++ PrimaryExpression
-    | PrimaryExpression ++
-    | -- PrimaryExpression
-    | PrimaryExpression --
+    | PrimaryExpression [ Expression ]
+    | PrimaryExpression . Expression
     ;
 
 PrimaryExpression
@@ -220,7 +227,6 @@ PrimaryExpression
     | Identifier
     | ParenthesizedExpression
     | ArrayExpression
-    | CallExpression
     ;
 
 ParenthesizedExpression

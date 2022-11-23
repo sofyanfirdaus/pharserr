@@ -40,6 +40,7 @@ TOKENS = {
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
     TokenKind.COLON: ":",
+    TokenKind.PERIOD: ".",
     TokenKind.QUESTION_MARK: "?",
 }
 
@@ -75,8 +76,8 @@ class JSParser:
         self.__prev_token_row = 0
         self.__loop_count = 0
         self.__switch_count = 0
-        self.__labels = set()
-        self.__loop_labels = set()
+        self.__labels: set[str] = set()
+        self.__loop_labels: set[str] = set()
 
     def parse_string(self, string: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_string(string, TOKENS)
@@ -134,6 +135,8 @@ class JSParser:
                     return self.__break_statement()
                 case "continue":
                     return self.__continue_statement()
+                case "function":
+                    return self.__function_declaration()
                 case _:
                     ...
 
@@ -158,7 +161,7 @@ class JSParser:
 
         node = {
             "type": "BlockStatement",
-            "body": self.__statement_list(['}'])
+            "body": self.__statement_list(["}"])
             if self.lookahead.kind != TokenKind.CLOSE_CURLY
             else [],
         }
@@ -296,7 +299,7 @@ class JSParser:
             case _:
                 self.tokenizer.print_err(
                     f"expected `case` or `default`, but got {self.lookahead.text}",
-                    self.lookahead
+                    self.lookahead,
                 )
         return {"type": "SwitchCase", "test": test, "consequent": consequent}
 
@@ -362,7 +365,9 @@ class JSParser:
             token_label = self.lookahead
             label = self.__identifier()
             if (name := label["name"]) not in self.__labels:
-                self.tokenizer.print_err(f"No label named `{name}`", token_label, full_line)
+                self.tokenizer.print_err(
+                    f"No label named `{name}`", token_label, full_line
+                )
 
         if (
             self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
@@ -389,7 +394,9 @@ class JSParser:
             token_label = self.lookahead
             label = self.__identifier()
             if (name := label["name"]) not in self.__loop_labels:
-                self.tokenizer.print_err(f"No loop label named `{name}`", token_label, full_line)
+                self.tokenizer.print_err(
+                    f"No loop label named `{name}`", token_label, full_line
+                )
 
         if (
             self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
@@ -400,6 +407,48 @@ class JSParser:
             self.tokenizer.print_err("Unsyntactic continue statement", token, full_line)
 
         return {"type": "ContinueStatement", "label": label}
+
+    def __function_declaration(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+        self.__consume_keyword("function")
+        id = self.__identifier()
+        self.__consume_token(TokenKind.OPEN_PAREN)
+
+        params: list[dict[str, Any]] = (
+            self.__parameter_list()
+            if self.lookahead.kind != TokenKind.CLOSE_PAREN
+            else []
+        )
+
+        self.__consume_token(TokenKind.CLOSE_PAREN)
+
+        return {
+            "type": "FunctionDeclaration",
+            "id": id,
+            "params": params,
+            "body": self.__block_statement(),
+        }
+
+    def __parameter_list(self) -> list[dict[str, Any]]:
+        parameters = [self.__parameter()]
+
+        assert self.lookahead is not None
+
+        while self.lookahead.kind == TokenKind.COMMA:
+            self.__consume_token(TokenKind.COMMA)
+            parameters.append(self.__parameter())
+
+        return parameters
+
+    def __parameter(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+        token = self.lookahead
+        node = self.__expression()
+
+        if node["type"] not in ["Identifier", "AssignmentExpression"]:
+            self.tokenizer.print_err("Invalid parameter", token)
+
+        return node
 
     def __catch_clause(self) -> dict[str, Any] | None:
         assert self.lookahead is not None
@@ -454,11 +503,13 @@ class JSParser:
         node = {"type": "ExpressionStatement", "expression": self.__expression()}
 
         assert self.lookahead is not None
+        assert isinstance(node["expression"], dict)
 
         if (
             node["expression"]["type"] == "Identifier"
             and self.lookahead.kind == TokenKind.COLON
         ):
+            assert isinstance(node["expression"], dict)
             return self.__labeled_statement(node["expression"])
 
         if (
@@ -693,14 +744,15 @@ class JSParser:
         if self.lookahead.kind in ops:
             node: dict[str, Any] = {"type": "UpdateExpression", "prefix": True}
             node["operator"] = self.__consume_token(self.lookahead.kind).text
-            if self.lookahead.kind != TokenKind.WORD:
+            argument = self.__expression()
+            if argument["type"] not in ["Identifier", "MemberExpression"]:
                 self.tokenizer.print_err(
                     "invalid argument for increment/decrement", self.lookahead
                 )
-            node["argument"] = self.__identifier()
+            node["argument"] = argument
         else:
             token = self.lookahead
-            node = self.__prim_expr()
+            node = self.__member_expr()
             if self.lookahead.kind in ops:
                 argument = node
                 node = {
@@ -708,12 +760,39 @@ class JSParser:
                     "prefix": False,
                     "operator": self.__consume_token(self.lookahead.kind).text,
                 }
-                if argument["type"] == "Identifier":
+                if argument["type"] in ["Identifier", "MemberExpression"]:
                     node["argument"] = argument
                 else:
                     self.tokenizer.print_err(
                         "invalid argument for increment/decrement", token
                     )
+        return node
+
+    def __member_expr(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+
+        node = self.__prim_expr()
+
+        while self.lookahead.kind in [TokenKind.OPEN_SQUARE, TokenKind.PERIOD]:
+            match self.lookahead.kind:
+                case TokenKind.OPEN_SQUARE:
+                    self.__consume_token(TokenKind.OPEN_SQUARE)
+                    property = self.__prim_expr()
+                    self.__consume_token(TokenKind.CLOSE_SQUARE)
+                    node = {
+                        "type": "MemberExpression",
+                        "object": node,
+                        "property": property,
+                    }
+                case TokenKind.PERIOD:
+                    self.__consume_token(TokenKind.PERIOD)
+                    node = {
+                        "type": "MemberExpression",
+                        "object": node,
+                        "property": self.__prim_expr(),
+                    }
+                case _:
+                    self.tokenizer.print_err("Unexpected token")
         return node
 
     def __prim_expr(self) -> dict[str, Any]:

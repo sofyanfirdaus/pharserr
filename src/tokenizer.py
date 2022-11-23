@@ -44,6 +44,7 @@ class TokenKind(Enum):
     AND = auto()
     OR = auto()
     COLON = auto()
+    PERIOD = auto()
     QUESTION_MARK = auto()
     LINE_COMMENT = auto()
 
