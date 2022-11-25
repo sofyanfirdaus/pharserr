@@ -27,8 +27,7 @@ Dibutuhkan grammar bahasa dan algoritma parser untuk melakukan parsing. Sudah sa
         └───test
             ├───backus_naur.txt
             ├───inputAcc.js
-            ├───inputReject.js
-            └───simple.js
+            └───inputReject.js
 ```
 
 ## Cara Menjalankan Program
