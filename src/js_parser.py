@@ -847,6 +847,7 @@ class JSParser:
         return node
 
     def __prim_expr(self) -> dict[str, Any]:
+        self.__check_eof("Unexpected EOF")
         node = {}
 
         assert self.lookahead is not None
@@ -967,6 +968,7 @@ class JSParser:
         return {"type": "Literal", "value": value, "raw": token.text}
 
     def __consume_token(self, kind: TokenKind, err_msg: str = "") -> Token:
+        self.__check_eof("Unexpected EOF")
         token = self.tokenizer.expect_token(kind, err_msg)
         try:
             self.__prev_token_row = self.tokenizer.row
@@ -978,6 +980,7 @@ class JSParser:
         return token
 
     def __consume_keyword(self, name: str) -> Token:
+        self.__check_eof("Unexpected EOF")
         token = self.tokenizer.expect_keyword(name)
         try:
             self.__prev_token_row = self.tokenizer.row
