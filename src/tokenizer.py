@@ -118,7 +118,7 @@ class Tokenizer(Iterator[Token]):
             self.content = ""
         else:
             self.full_line = self.content[:nl]
-            self.content = self.content[nl + 1:]
+            self.content = self.content[nl + 1 :]
         self.row += 1
         self.line = self.full_line.lstrip()
 
@@ -190,10 +190,43 @@ class Tokenizer(Iterator[Token]):
 
         for token_kind, token_text in self.token_pairs.items():
             if self.line.startswith(s := token_text):
+                if token_text == "." and self.line[1] in "0123456789":
+                    break
                 token = Token(s, token_kind, location)
-                self.line = self.line[len(s):]
+                self.line = self.line[len(s) :]
                 self.peek_token = token
                 return token
+
+        if (c := self.line[(idx := 0)]).isalnum() or c == ".":
+            number = c in "0123456789."
+            period = c == "."
+            text = c
+            while number and idx + 1 < len(self.line):
+                c = self.line[idx + 1]
+                if c in "0123456789.":
+                    if c == ".":
+                        if period:
+                            break
+                        else:
+                            period = True
+                elif c.isalpha() or c == "_":
+                    number = False
+                else:
+                    break
+                text += c
+                idx += 1
+            while idx + 1 < len(self.line) and (
+                self.line[idx + 1].isalnum() or self.line[idx + 1] == "_"
+            ):
+                text += self.line[idx + 1]
+                idx += 1
+            self.line = self.line[len(text) :]
+            if number:
+                token = Token(text, TokenKind.NUMBER_LIT, location)
+            else:
+                token = Token(text, TokenKind.WORD, location)
+            self.peek_token = token
+            return token
 
         if self.line[0].isalpha():
             end = next(
@@ -229,7 +262,7 @@ class Tokenizer(Iterator[Token]):
                 self.print_err("Unterminated string literal")
             else:
                 s = self.line[: end + 2]
-                self.line = self.line[end + 2:]
+                self.line = self.line[end + 2 :]
                 token = Token(s, TokenKind.STR_LIT, location)
                 self.peek_token = token
                 return token

@@ -43,15 +43,15 @@ class FiniteAutomaton:
                 break
         return (cur_state == self.final_state, cur_state)
 
+class IdentifierAutomaton:
+    def __init__(self):
+        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        numbers = "0123456789"
+        self.automaton = FiniteAutomaton("q0", "q2")
+        self.automaton.add_transition("q0", alphabet + "_", "q1")
+        self.automaton.add_transition("q1", alphabet + "_" + numbers, "q2")
+        self.automaton.add_transition("q2", alphabet + "_" + numbers, "q2")
 
-ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-NUMBERS = "0123456789"
-
-automaton = FiniteAutomaton("q0", "q2")
-automaton.add_transition("q0", ALPHABET + "_", "q1")
-automaton.add_transition("q1", ALPHABET + "_" + NUMBERS, "q2")
-automaton.add_transition("q2", ALPHABET + "_" + NUMBERS, "q2")
-
-accepted, state = automaton.evaluate("Variabel")
-
-print(accepted)
+    def validate(self, string: str) -> bool:
+        acc, _ = self.automaton.evaluate(string)
+        return acc

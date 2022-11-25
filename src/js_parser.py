@@ -2,6 +2,7 @@ import os
 import sys
 from pprint import pprint as print
 from typing import Any
+from finite_automaton import IdentifierAutomaton
 
 from tokenizer import Location, Token, TokenKind, Tokenizer
 
@@ -91,6 +92,7 @@ class JSParser:
         self.__function_count = 0
         self.__labels: set[str] = set()
         self.__loop_labels: set[str] = set()
+        self.identifier_automaton = IdentifierAutomaton()
 
     def parse_string(self, string: str) -> dict[str, Any]:
         self.tokenizer = Tokenizer.from_string(string, TOKENS)
@@ -347,8 +349,13 @@ class JSParser:
         assert self.lookahead is not None
 
         if (
-            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
-        ) or self.lookahead.kind == TokenKind.SEMICOLON:
+            not self.tokenizer.stop
+            and (
+                self.__prev_token_row == self.tokenizer.row
+                or self.lookahead.kind == TokenKind.SEMICOLON
+            )
+            and self.lookahead.kind != TokenKind.CLOSE_CURLY
+        ):
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {"type": "ReturnStatement", "argument": arg}
@@ -360,8 +367,13 @@ class JSParser:
         assert self.lookahead is not None
 
         if (
-            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
-        ) or self.lookahead.kind == TokenKind.SEMICOLON:
+            not self.tokenizer.stop
+            and (
+                self.__prev_token_row == self.tokenizer.row
+                or self.lookahead.kind == TokenKind.SEMICOLON
+            )
+            and self.lookahead.kind != TokenKind.CLOSE_CURLY
+        ):
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {"type": "ThrowStatement", "argument": arg}
@@ -386,8 +398,13 @@ class JSParser:
                 )
 
         if (
-            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
-        ) or self.lookahead.kind == TokenKind.SEMICOLON:
+            not self.tokenizer.stop
+            and (
+                self.__prev_token_row == self.tokenizer.row
+                or self.lookahead.kind == TokenKind.SEMICOLON
+            )
+            and self.lookahead.kind != TokenKind.CLOSE_CURLY
+        ):
             self.__consume_token(TokenKind.SEMICOLON)
 
         if label is None and self.__loop_count < 1 and self.__switch_count < 1:
@@ -415,8 +432,13 @@ class JSParser:
                 )
 
         if (
-            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
-        ) or self.lookahead.kind == TokenKind.SEMICOLON:
+            not self.tokenizer.stop
+            and (
+                self.__prev_token_row == self.tokenizer.row
+                or self.lookahead.kind == TokenKind.SEMICOLON
+            )
+            and self.lookahead.kind != TokenKind.CLOSE_CURLY
+        ):
             self.__consume_token(TokenKind.SEMICOLON)
 
         if label is None and self.__loop_count < 1:
@@ -536,8 +558,13 @@ class JSParser:
             return self.__labeled_statement(node["expression"])
 
         if (
-            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
-        ) or self.lookahead.kind == TokenKind.SEMICOLON:
+            not self.tokenizer.stop
+            and (
+                self.__prev_token_row == self.tokenizer.row
+                or self.lookahead.kind == TokenKind.SEMICOLON
+            )
+            and self.lookahead.kind != TokenKind.CLOSE_CURLY
+        ):
             self.__consume_token(TokenKind.SEMICOLON)
 
         return node
@@ -553,8 +580,13 @@ class JSParser:
             declarations.append(self.__variable_declarator(kind.text == "const"))
 
         if (
-            self.tokenizer.line and self.__prev_token_row == self.tokenizer.row
-        ) or self.lookahead.kind == TokenKind.SEMICOLON:
+            not self.tokenizer.stop
+            and (
+                self.__prev_token_row == self.tokenizer.row
+                or self.lookahead.kind == TokenKind.SEMICOLON
+            )
+            and self.lookahead.kind != TokenKind.CLOSE_CURLY
+        ):
             self.__consume_token(TokenKind.SEMICOLON)
 
         return {
@@ -930,6 +962,8 @@ class JSParser:
     def __identifier(self) -> dict[str, Any]:
         ident = self.__consume_token(TokenKind.WORD, "expected identifier")
         if not self.is_keyword(ident):
+            if not self.identifier_automaton.validate(ident.text):
+                self.tokenizer.print_err("invalid identifier", ident)
             return {"type": "Identifier", "name": ident.text}
         else:
             self.tokenizer.print_err("unexpected use of keyword", ident)
@@ -959,7 +993,11 @@ class JSParser:
 
     def __numeric_literal(self) -> dict[str, Any]:
         token = self.__consume_token(TokenKind.NUMBER_LIT)
-        return {"type": "Literal", "value": int(token.text), "raw": token.text}
+        try:
+            value = int(token.text)
+        except ValueError:
+            value = float(token.text)
+        return {"type": "Literal", "value": value, "raw": token.text}
 
     def __str_literal(self) -> dict[str, Any]:
         token = self.__consume_token(TokenKind.STR_LIT)
