@@ -51,7 +51,7 @@ class IdentifierAutomaton:
     def __init__(self):
         alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
         numbers = "0123456789"
-        self.automaton = FiniteAutomaton("q0", {"q0", "q2"})
+        self.automaton = FiniteAutomaton("q0", {"q1", "q2"})
         self.automaton.add_transition("q0", alphabet + "_", "q1")
         self.automaton.add_transition("q1", alphabet + "_" + numbers, "q2")
         self.automaton.add_transition("q2", alphabet + "_" + numbers, "q2")
