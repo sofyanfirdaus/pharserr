@@ -88,6 +88,7 @@ class JSParser:
         self.__prev_token_row = 0
         self.__loop_count = 0
         self.__switch_count = 0
+        self.__function_count = 0
         self.__labels: set[str] = set()
         self.__loop_labels: set[str] = set()
 
@@ -337,6 +338,9 @@ class JSParser:
         }
 
     def __return_statement(self) -> dict[str, Any]:
+        if self.__function_count < 1:
+            self.tokenizer.print_err("Unsyntactic return statement", self.lookahead)
+
         self.__consume_keyword("return")
         arg = self.__expression()
 
@@ -421,6 +425,7 @@ class JSParser:
         return {"type": "ContinueStatement", "label": label}
 
     def __function_declaration(self) -> dict[str, Any]:
+        self.__function_count += 1
         assert self.lookahead is not None
         self.__consume_keyword("function")
         id = self.__identifier()
@@ -433,22 +438,28 @@ class JSParser:
         )
 
         self.__consume_token(TokenKind.CLOSE_PAREN)
+        body = (self.__block_statement(),)
+        self.__function_count -= 1
 
         return {
             "type": "FunctionDeclaration",
             "id": id,
             "params": params,
-            "body": self.__block_statement(),
+            "body": body,
         }
 
     def __parameter_list(self) -> list[dict[str, Any]]:
-        parameters = [self.__parameter()]
-
         assert self.lookahead is not None
+        parameters = []
+        if self.lookahead.kind != TokenKind.COMMA:
+            parameters.append(self.__parameter())
+        else:
+            self.tokenizer.print_err("expected function parameter", self.lookahead)
 
         while self.lookahead.kind == TokenKind.COMMA:
             self.__consume_token(TokenKind.COMMA)
-            parameters.append(self.__parameter())
+            if self.lookahead.kind != TokenKind.CLOSE_PAREN:
+                parameters.append(self.__parameter())
 
         return parameters
 
@@ -916,7 +927,7 @@ class JSParser:
         return elements
 
     def __identifier(self) -> dict[str, Any]:
-        ident = self.__consume_token(TokenKind.WORD)
+        ident = self.__consume_token(TokenKind.WORD, "expected identifier")
         if not self.is_keyword(ident):
             return {"type": "Identifier", "name": ident.text}
         else:
@@ -955,8 +966,8 @@ class JSParser:
         value = token.text[1:-1]
         return {"type": "Literal", "value": value, "raw": token.text}
 
-    def __consume_token(self, kind: TokenKind) -> Token:
-        token = self.tokenizer.expect_token(kind, "expected identifier")
+    def __consume_token(self, kind: TokenKind, err_msg: str = "") -> Token:
+        token = self.tokenizer.expect_token(kind, err_msg)
         try:
             self.__prev_token_row = self.tokenizer.row
             next_token = self.tokenizer.peek()
