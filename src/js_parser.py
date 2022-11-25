@@ -20,18 +20,20 @@ TOKENS = {
     TokenKind.EQ: "==",
     TokenKind.NEQ: "!=",
     TokenKind.POW: "**",
+    TokenKind.OR_ASSIGNMENT: "|=",
+    TokenKind.AND_ASSIGNMENT: "&=",
+    TokenKind.XOR_ASSIGNMENT: "^=",
+    TokenKind.SAR_ASSIGNMENT: ">>=",
+    TokenKind.SHR_ASSIGNMENT: ">>>=",
+    TokenKind.SHL_ASSIGNMENT: "<<=",
     TokenKind.PLUS_ASSIGNMENT: "+=",
     TokenKind.MINUS_ASSIGNMENT: "-=",
     TokenKind.MUL_ASSIGNMENT: "*=",
     TokenKind.DIV_ASSIGNMENT: "/=",
     TokenKind.MOD_ASSIGNMENT: "%=",
     TokenKind.ASSIGNMENT: "=",
-    TokenKind.GE: ">=",
-    TokenKind.LE: "<=",
     TokenKind.INCR: "++",
     TokenKind.DECR: "--",
-    TokenKind.GT: ">",
-    TokenKind.LT: "<",
     TokenKind.PLUS: "+",
     TokenKind.MINUS: "-",
     TokenKind.MUL: "*",
@@ -39,6 +41,16 @@ TOKENS = {
     TokenKind.MOD: "%",
     TokenKind.AND: "&&",
     TokenKind.OR: "||",
+    TokenKind.BIT_OR: "|",
+    TokenKind.BIT_AND: "&",
+    TokenKind.BIT_XOR: "^",
+    TokenKind.SHR: ">>>",
+    TokenKind.SHL: "<<",
+    TokenKind.SAR: ">>",
+    TokenKind.GE: ">=",
+    TokenKind.LE: "<=",
+    TokenKind.GT: ">",
+    TokenKind.LT: "<",
     TokenKind.COLON: ":",
     TokenKind.PERIOD: ".",
     TokenKind.QUESTION_MARK: "?",
@@ -597,11 +609,17 @@ class JSParser:
         node = self.__logic_expr()
         ops = [
             TokenKind.ASSIGNMENT,
+            TokenKind.OR_ASSIGNMENT,
             TokenKind.PLUS_ASSIGNMENT,
+            TokenKind.AND_ASSIGNMENT,
             TokenKind.MINUS_ASSIGNMENT,
+            TokenKind.XOR_ASSIGNMENT,
             TokenKind.MUL_ASSIGNMENT,
+            TokenKind.SAR_ASSIGNMENT,
             TokenKind.DIV_ASSIGNMENT,
+            TokenKind.SHR_ASSIGNMENT,
             TokenKind.MOD_ASSIGNMENT,
+            TokenKind.SHL_ASSIGNMENT,
         ]
 
         assert self.lookahead is not None
@@ -652,7 +670,7 @@ class JSParser:
         return self.__comp_expr()
 
     def __comp_expr(self) -> dict[str, Any]:
-        node = self.__add_expr()
+        node = self.__bit_expr()
         comp_ops = [
             TokenKind.EQUIV,
             TokenKind.NEQUIV,
@@ -667,6 +685,28 @@ class JSParser:
         assert self.lookahead is not None
 
         while self.lookahead.kind in comp_ops:
+            node = {
+                "type": "BinaryExpression",
+                "operator": self.__consume_token(self.lookahead.kind).text,
+                "left": node,
+                "right": self.__bit_expr(),
+            }
+        return node
+
+    def __bit_expr(self) -> dict[str, Any]:
+        node = self.__add_expr()
+        ops = [
+            TokenKind.BIT_AND,
+            TokenKind.BIT_OR,
+            TokenKind.BIT_XOR,
+            TokenKind.SAR,
+            TokenKind.SHL,
+            TokenKind.SHR,
+        ]
+
+        assert self.lookahead is not None
+
+        while self.lookahead.kind in ops:
             node = {
                 "type": "BinaryExpression",
                 "operator": self.__consume_token(self.lookahead.kind).text,
@@ -789,7 +829,7 @@ class JSParser:
                     node = {
                         "type": "MemberExpression",
                         "object": node,
-                        "property": self.__prim_expr(),
+                        "property": self.__identifier(),
                     }
                 case _:
                     self.tokenizer.print_err("Unexpected token")
@@ -813,9 +853,36 @@ class JSParser:
                         node = self.__identifier()
             case TokenKind.OPEN_SQUARE:
                 node = self.__array_expr()
+            case TokenKind.OPEN_CURLY:
+                node = self.__object_expr()
             case _:
                 node = self.__literal()
         return node
+
+    def __object_expr(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+        self.__consume_token(TokenKind.OPEN_CURLY)
+        properties = (
+            self.__properties() if self.lookahead.kind != TokenKind.CLOSE_CURLY else []
+        )
+        self.__consume_token(TokenKind.CLOSE_CURLY)
+        return {"type": "ObjectExpression", "properties": properties}
+
+    def __properties(self) -> list[dict[str, Any]]:
+        assert self.lookahead is not None
+        properties = [self.__property()]
+        while self.lookahead.kind == TokenKind.COMMA:
+            self.__consume_token(TokenKind.COMMA)
+            if self.lookahead.kind != TokenKind.CLOSE_CURLY:
+                properties.append(self.__property())
+        return properties
+
+    def __property(self) -> dict[str, Any]:
+        assert self.lookahead is not None
+        key = self.__identifier()
+        self.__consume_token(TokenKind.COLON)
+        value = self.__expression()
+        return {"type": "Property", "key": key, "value": value}
 
     def __array_expr(self) -> dict[str, Any]:
         assert self.lookahead is not None
@@ -889,7 +956,7 @@ class JSParser:
         return {"type": "Literal", "value": value, "raw": token.text}
 
     def __consume_token(self, kind: TokenKind) -> Token:
-        token = self.tokenizer.expect_token(kind)
+        token = self.tokenizer.expect_token(kind, "expected identifier")
         try:
             self.__prev_token_row = self.tokenizer.row
             next_token = self.tokenizer.peek()

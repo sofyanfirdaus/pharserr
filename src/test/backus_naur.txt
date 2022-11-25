@@ -173,15 +173,20 @@ BinaryExpression
     ;
 
 ComparativeExpression
+    : BitwiseExpression
+    | ComparativeExpression > BitwiseExpression
+    | ComprrativeExpression >= BitwiseExpression
+    | ComparativeExpression < BitwiseExpression
+    | ComparativeExpression <= BitwiseExpression
+    | ComparativeExpression == BitwiseExpression
+    | ComparativeExpression != BitwiseExpression
+    | ComparativeExpression === BitwiseExpression
+    | ComparativeExpression !== BitwiseExpression
+    ;
+
+BitwiseExpression
     : AdditiveExpression
-    | ComparativeExpression > AdditiveExpression
-    | ComprrativeExpression >= AdditiveExpression
-    | ComparativeExpression < AdditiveExpression
-    | ComparativeExpression <= AdditiveExpression
-    | ComparativeExpression == AdditiveExpression
-    | ComparativeExpression != AdditiveExpression
-    | ComparativeExpression === AdditiveExpression
-    | ComparativeExpression !== AdditiveExpression
+    | BitwiseExpression <BIT_OPERATOR> AdditiveExpression
     ;
 
 AdditiveExpression
@@ -227,6 +232,7 @@ PrimaryExpression
     | Identifier
     | ParenthesizedExpression
     | ArrayExpression
+    | ObjectExpression
     ;
 
 ParenthesizedExpression
@@ -242,4 +248,17 @@ ArrayElements
     | Expression
     | ArrayElements ,
     | ArrayElements , Expression
+    ;
+
+ObjectExpression
+    : { Properties }
+    ;
+
+Properties
+    : Property
+    | Properties , Property
+    ;
+
+Property
+    : Identifier : Expression
     ;

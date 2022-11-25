@@ -7,7 +7,8 @@ sys.tracebacklimit = 0
 
 
 class TokenKind(Enum):
-    """ Some generic tokens enumeration """
+    """Some generic tokens enumeration"""
+
     WORD = auto()
     OPEN_PAREN = auto()
     CLOSE_PAREN = auto()
@@ -33,12 +34,6 @@ class TokenKind(Enum):
     DIV = auto()
     MOD = auto()
     POW = auto()
-    ASSIGNMENT = auto()
-    PLUS_ASSIGNMENT = auto()
-    MINUS_ASSIGNMENT = auto()
-    MUL_ASSIGNMENT = auto()
-    DIV_ASSIGNMENT = auto()
-    MOD_ASSIGNMENT = auto()
     INCR = auto()
     DECR = auto()
     AND = auto()
@@ -47,6 +42,24 @@ class TokenKind(Enum):
     PERIOD = auto()
     QUESTION_MARK = auto()
     LINE_COMMENT = auto()
+    BIT_OR = auto()
+    BIT_AND = auto()
+    BIT_XOR = auto()
+    SHL = auto()
+    SAR = auto()
+    SHR = auto()
+    ASSIGNMENT = auto()
+    PLUS_ASSIGNMENT = auto()
+    MINUS_ASSIGNMENT = auto()
+    MUL_ASSIGNMENT = auto()
+    DIV_ASSIGNMENT = auto()
+    MOD_ASSIGNMENT = auto()
+    OR_ASSIGNMENT = auto()
+    AND_ASSIGNMENT = auto()
+    XOR_ASSIGNMENT = auto()
+    SAR_ASSIGNMENT = auto()
+    SHR_ASSIGNMENT = auto()
+    SHL_ASSIGNMENT = auto()
 
 
 @dataclass
@@ -70,9 +83,9 @@ class Token:
 
 
 class Tokenizer(Iterator[Token]):
-
-    def __init__(self, content: str, file_path: str,
-                 token_pairs: dict[TokenKind, str]) -> None:
+    def __init__(
+        self, content: str, file_path: str, token_pairs: dict[TokenKind, str]
+    ) -> None:
         self.content = content
         self.file_path = file_path
         self.line = ""
@@ -89,17 +102,17 @@ class Tokenizer(Iterator[Token]):
 
     @classmethod
     def from_file(cls, file_path: str, token_pairs: dict[TokenKind, str]):
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             content = "".join(file.readlines())
         return cls(content, file_path, token_pairs)
 
     def location(self) -> Location:
-        return Location(self.row,
-                        len(self.full_line) - len(self.line) + 1,
-                        self.file_path)
+        return Location(
+            self.row, len(self.full_line) - len(self.line) + 1, self.file_path
+        )
 
     def __next_line(self) -> None:
-        nl = self.content.find('\n')
+        nl = self.content.find("\n")
         if nl == -1:
             self.full_line = self.content
             self.content = ""
@@ -117,16 +130,15 @@ class Tokenizer(Iterator[Token]):
             token = next(self)
             if token.kind != kind:
                 if err_msg:
-                    self.print_err(
-                        f"Expected {err_msg}, but got `{token.text}`", token)
+                    self.print_err(f"Expected {err_msg}, but got `{token.text}`", token)
                 else:
                     self.print_err(
                         f"Expected `{self.token_pairs[kind]}`, but got `{token.text}`",
-                        token)
+                        token,
+                    )
             return token
         except StopIteration:
-            self.print_err(
-                f"Expected `{self.token_pairs[kind]}`, but got nothing")
+            self.print_err(f"Expected `{self.token_pairs[kind]}`, but got nothing")
 
     def expect_keyword(self, name: str):
         token = self.expect_token(TokenKind.WORD, "keyword")
@@ -142,7 +154,9 @@ class Tokenizer(Iterator[Token]):
         else:
             raise StopIteration()
 
-    def print_err(self, err_msg: str, token: Token | None = None, full_line: str | None = None):
+    def print_err(
+        self, err_msg: str, token: Token | None = None, full_line: str | None = None
+    ):
         if token is not None:
             length = len(token.text)
             location = token.location
@@ -163,8 +177,9 @@ class Tokenizer(Iterator[Token]):
 
         self.line = self.line.lstrip()
 
-        while (len(self.line) == 0 and len(self.content) > 0) or \
-                self.line.startswith(self.token_pairs[TokenKind.LINE_COMMENT]):
+        while (len(self.line) == 0 and len(self.content) > 0) or self.line.startswith(
+            self.token_pairs[TokenKind.LINE_COMMENT]
+        ):
             self.__next_line()
 
         if len(self.line) == 0:
@@ -181,8 +196,10 @@ class Tokenizer(Iterator[Token]):
                 return token
 
         if self.line[0].isalpha():
-            end = next((i for i, c in enumerate(self.line)
-                        if not (c.isalnum() or c == '_')), -1)
+            end = next(
+                (i for i, c in enumerate(self.line) if not (c.isalnum() or c == "_")),
+                -1,
+            )
             if end != -1:
                 s = self.line[:end]
                 self.line = self.line[end:]
@@ -195,7 +212,7 @@ class Tokenizer(Iterator[Token]):
         elif self.line[0] in "0123456789.":
             gen = (i for i, c in enumerate(self.line) if not c.isdecimal())
             end = next(gen, -1)
-            if self.line[end] == '.':
+            if self.line[end] == ".":
                 end = next(gen, -1)
             if end != -1:
                 s = self.line[:end]
@@ -211,7 +228,7 @@ class Tokenizer(Iterator[Token]):
             if end == -1:
                 self.print_err("Unterminated string literal")
             else:
-                s = self.line[:end + 2]
+                s = self.line[: end + 2]
                 self.line = self.line[end + 2:]
                 token = Token(s, TokenKind.STR_LIT, location)
                 self.peek_token = token
