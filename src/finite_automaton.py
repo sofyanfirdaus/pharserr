@@ -1,25 +1,28 @@
 class FiniteAutomaton:
-
-    def __init__(self,
-                 init_state: str,
-                 final_state: str,
-                 transitions: dict[str, dict[str, str]] = {}):
+    def __init__(
+        self,
+        init_state: str,
+        final_states: set[str],
+        transitions: dict[str, dict[str, str]] = {},
+    ):
         self.states = set(transitions.keys())
         self.states.add(init_state)
-        self.states.add(final_state)
+        for state in final_states:
+            self.states.add(state)
 
         self.transitions = transitions
         self.transitions.setdefault(init_state, {})
-        self.transitions.setdefault(final_state, {})
+        for state in final_states:
+            self.transitions.setdefault(state, {})
 
         self.init_state = init_state
-        self.final_state = final_state
+        self.final_states = final_states
 
     def set_init_state(self, init_state: str):
         self.init_state = init_state
 
-    def set_final_state(self, final_state: str):
-        self.final_state = final_state
+    def add_final_states(self, state: str):
+        self.final_states.add(state)
 
     def add_transitions(self, state: str, transisiton: dict[str, str]):
         self.states.add(state)
@@ -41,13 +44,14 @@ class FiniteAutomaton:
             cur_state = self.next_state(cur_state, event)
             if cur_state == "nil":
                 break
-        return (cur_state == self.final_state, cur_state)
+        return (cur_state in self.final_states, cur_state)
+
 
 class IdentifierAutomaton:
     def __init__(self):
         alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
         numbers = "0123456789"
-        self.automaton = FiniteAutomaton("q0", "q2")
+        self.automaton = FiniteAutomaton("q0", {"q0", "q1"})
         self.automaton.add_transition("q0", alphabet + "_", "q1")
         self.automaton.add_transition("q1", alphabet + "_" + numbers, "q2")
         self.automaton.add_transition("q2", alphabet + "_" + numbers, "q2")
