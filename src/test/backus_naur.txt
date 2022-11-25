@@ -21,6 +21,7 @@ Statement
     | LabeledStatement
     | ThrowStatement
     | BreakStatement
+    | ContinueStatement
     | VariableDeclaration
     | FunctionDeclaration
     ;
@@ -87,6 +88,13 @@ BreakStatement
     | break Identifier ;
     ;
 
+ContinueStatement
+    : continue
+    | continue ;
+    | continue Identifier
+    | continue Identifier ;
+    ;
+
 ExpressionStatement
     : LabeledStatement
     | Expression
@@ -112,7 +120,7 @@ VariableDeclaratorList
     ;
 
 VariableDeclarator
-    | Identifier
+    : Identifier
     | Identifier = Expression
     ;
 
@@ -128,6 +136,7 @@ ParameterList
 
 Parameter
     : Identifier
+    | AssignmentExpression
     ;
 
 Expression
@@ -135,7 +144,7 @@ Expression
     ;
 
 ConditionalExpression
-    | AssignmentExpression
+    : AssignmentExpression
     | Expression ? Expression : Expression
     ;
 
@@ -200,11 +209,17 @@ UnaryExpression
     ;
 
 UpdateExpression
+    : MemberExpression
+    | ++ MemberExpression
+    | MemberExpression ++
+    | -- MemberExpression
+    | MemberExpression --
+    ;
+
+MemberExpression
     : PrimaryExpression
-    | ++ PrimaryExpression
-    | PrimaryExpression ++
-    | -- PrimaryExpression
-    | PrimaryExpression --
+    | PrimaryExpression [ Expression ]
+    | PrimaryExpression . Expression
     ;
 
 PrimaryExpression
@@ -212,7 +227,6 @@ PrimaryExpression
     | Identifier
     | ParenthesizedExpression
     | ArrayExpression
-    | CallExpression
     ;
 
 ParenthesizedExpression
